@@ -14,7 +14,6 @@
 
 import collections
 import itertools
-import sys
 from copy import deepcopy
 
 from args import (
@@ -22,152 +21,10 @@ from args import (
     ModelArg, ModelFileArg, OMZ_DIR, TestDataArg, image_net_arg, image_retrieval_arg
 )
 from data_sequences import DATA_SEQUENCES
+from demos import CppDemo, PythonDemo, combine_cases, single_option_cases, TestCase
+
 
 MONITORS = {'-u': 'cdm'}
-TestCase = collections.namedtuple('TestCase', ['options', 'extra_models'])
-# TODO with Python3.7 use namedtuple defaults instead
-TestCase.__new__.__defaults__ = [],
-
-
-class Demo:
-    IMPLEMENTATION_TYPES = set()
-
-    def __init__(self, name, implementation, model_keys=None, device_keys=None, test_cases=None):
-        self.implementation = implementation
-        self.subdirectory = name + '/' + implementation
-        self.device_keys = device_keys
-        self.model_keys = model_keys if model_keys else ['-m']
-
-        self.test_cases = test_cases
-
-        self._exec_name = self.subdirectory.replace('/', '_')
-        self.parser = None
-        self.supported_devices = None
-
-        Demo.IMPLEMENTATION_TYPES.add(implementation)
-
-    def models_lst_path(self, source_dir):
-        return source_dir / self.subdirectory / 'models.lst'
-
-    def device_args(self, device_list):
-        if len(self.device_keys) == 0:
-            return {'CPU': []}
-        if self.supported_devices:
-            device_list = list(set(device_list) & set(self.supported_devices))
-        return {device: [arg for key in self.device_keys for arg in [key, device]] for device in device_list}
-
-    def get_models(self, case):
-        return ((case.options[key], key) for key in self.model_keys if key in case.options)
-
-    def update_case(self, case, updated_options, with_replacement=False):
-        if not updated_options: return
-        new_options = case.options.copy()
-        for key, value in updated_options.items():
-            new_options[key] = value
-        new_case = case._replace(options=new_options)
-        if with_replacement:
-            self.test_cases.remove(case)
-        self.test_cases.append(new_case)
-
-    def add_parser(self, parser):
-        self.parser = parser(self)
-        return self
-
-    def parse_output(self, output, test_case, device):
-        if self.parser:
-            self.parser(output, test_case, device)
-
-    def update_option(self, updated_options):
-        for case in self.test_cases[:]:
-            self.update_case(case, updated_options, with_replacement=True)
-        return self
-
-    def add_test_cases(self, *new_cases):
-        for test_case in new_cases:
-            self.test_cases = combine_cases(self.test_cases, test_case)
-        return self
-
-    def exclude_models(self, models):
-        for case in self.test_cases[:]:
-            for model, _ in self.get_models(case):
-                if not isinstance(model, ModelArg) or model.name in set(models):
-                    self.test_cases.remove(case)
-                    continue
-        return self
-
-    def only_models(self, models):
-        for case in self.test_cases[:]:
-            for model, _ in self.get_models(case):
-                if not isinstance(model, ModelArg) or model.name not in set(models):
-                    self.test_cases.remove(case)
-                    continue
-        return self
-
-    def only_devices(self, devices):
-        self.supported_devices = devices
-        return self
-
-    def set_precisions(self, precisions, model_info):
-        for case in self.test_cases[:]:
-            updated_options = {p: {} for p in precisions}
-
-            for model, key in self.get_models(case):
-                if not isinstance(model, ModelArg):
-                    continue
-                supported_p = list(set(precisions) & set(model_info[model.name]["precisions"]))
-                if len(supported_p):
-                    model.precision = supported_p[0]
-                    for p in supported_p[1:]:
-                        updated_options[p][key] = ModelArg(model.name, p)
-                else:
-                    print("Warning: {} model does not support {} precisions and will not be tested\n".format(
-                          model.name, ','.join(precisions)))
-                    self.test_cases.remove(case)
-                    break
-
-            for p in precisions:
-                self.update_case(case, updated_options[p])
-
-
-class CppDemo(Demo):
-    def __init__(self, name, implementation='cpp', model_keys=None, device_keys=None, test_cases=None):
-        super().__init__(name, implementation, model_keys, device_keys, test_cases)
-
-        self._exec_name = self._exec_name.replace('_cpp', '')
-
-    def fixed_args(self, source_dir, build_dir):
-        return [str(build_dir / self._exec_name)]
-
-
-class PythonDemo(Demo):
-    def __init__(self, name, implementation='python', model_keys=None, device_keys=None, test_cases=None):
-        super().__init__(name, implementation, model_keys, device_keys, test_cases)
-
-        self._exec_name = self._exec_name.replace('_python', '')
-
-    def fixed_args(self, source_dir, build_dir):
-        cpu_extension_path = build_dir / 'lib/libcpu_extension.so'
-
-        return [sys.executable, str(source_dir / self.subdirectory / (self._exec_name + '.py')),
-            *(['-l', str(cpu_extension_path)] if cpu_extension_path.exists() else [])]
-
-
-def join_cases(*args):
-    options = {}
-    for case in args: options.update(case.options)
-    extra_models = set()
-    for case in args: extra_models.update(case.extra_models)
-    return TestCase(options=options, extra_models=list(case.extra_models))
-
-
-def combine_cases(*args):
-    return [join_cases(*combination)
-        for combination in itertools.product(*[[arg] if isinstance(arg, TestCase) else arg for arg in args])]
-
-
-def single_option_cases(key, *args):
-    return [TestCase(options={} if arg is None else {key: arg}) for arg in args]
-
 
 
 DEMOS = [

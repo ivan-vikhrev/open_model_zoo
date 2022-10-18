@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) 2019 Intel Corporation
+# Copyright (c) 2022 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,13 +44,16 @@ import importlib
 from pathlib import Path
 
 from args import ArgContext, Arg, ModelArg
-from cases import Demo
 from data_sequences import DATA_SEQUENCES
+from demos import Demo, create_demos_from_yaml
+from parsers import PerformanceParser
+from utils import read_yaml
 
-scopes = {
-    'base': importlib.import_module('cases').DEMOS,
-    'performance': importlib.import_module('performance_cases').DEMOS,
-}
+# scopes = {
+#     'base': importlib.import_module('cases').DEMOS,
+#     'performance': importlib.import_module('performance_cases').DEMOS,
+#     'custom': importlib.import_module('custom_cases').DEMOS
+# }
 
 
 def parser_paths_list(supported_devices):
@@ -67,11 +70,13 @@ def parse_args():
         help='directory with test data')
     parser.add_argument('--downloader-cache-dir', type=Path, required=True, metavar='DIR',
         help='directory to use as the cache for the model downloader')
+    parser.add_argument('--config', type=Path, default="default_config.yml",
+        help="The config file with test cases")
     parser.add_argument('--demos', metavar='DEMO[,DEMO...]',
         help='list of demos to run tests for (by default, every demo is tested). '
         'For testing demos of specific implementation pass one (or more) of the next values: cpp, cpp_gapi, python.')
     parser.add_argument('--scope', default='base',
-        help='The scenario for testing demos.', choices=('base', 'performance'))
+        help='The scenario for testing demos.', choices=('base', 'performance', 'custom'))
     parser.add_argument('--mo', type=Path, metavar='MO.PY',
         help='Model Optimizer entry point script')
     parser.add_argument('--devices', default="CPU GPU",
@@ -127,6 +132,8 @@ def prepare_models(auto_tools_dir, downloader_cache_dir, mo_path, global_temp_di
     complete_models_lst_path.write_text(''.join(model + '\n' for model in model_names))
 
     print('Retrieving models...', flush=True)
+    print("    List of {} models for downloading: ".format(len(model_names)), model_names)
+    print("    Downloader dist folder: {}".format(dl_dir))
 
     try:
         subprocess.check_output(
@@ -196,16 +203,42 @@ def get_models(case, keys):
     return models
 
 
+def get_demos_to_test(demos_from_config, demos_from_args):
+    if demos_from_args is not None:
+        names_of_demos_to_test = set(demos_from_args.split(','))
+        if all(impl in Demo.IMPLEMENTATION_TYPES for impl in names_of_demos_to_test):
+            names_of_demos_to_test = {demo.subdirectory for demo in demos_from_config if demo.implementation in names_of_demos_to_test}
+
+        demos_to_test = [demo for demo in demos_from_config if demo.subdirectory in names_of_demos_to_test]
+    else:
+        demos_to_test = demos_from_config
+
+    if len(demos_to_test) == 0:
+        if demos_from_args:
+            print("List of demos to test is empty.")
+            print(f"Command line argument '--demos {demos_from_args}' was passed, check that you've specified correct value from the list below:")
+            print(*(list(Demo.IMPLEMENTATION_TYPES) + [demo.subdirectory for demo in demos_from_config]), sep=',')
+        raise RuntimeError("Not found demos to test!")
+
+    print(f"{len(demos_to_test)} demos will be tested:")
+    print(*[demo.subdirectory for demo in demos_to_test], sep =',')
+
+    return demos_to_test
+
+
 def main():
     args = parse_args()
 
-    DEMOS = scopes[args.scope]
+    # DEMOS = scopes[args.scope]
+    DEMOS = create_demos_from_yaml(read_yaml(args.config))
     suppressed_devices = parse_supported_device_list(args.supported_devices)
 
+    # Set up directories
     omz_dir = (Path(__file__).parent / '../..').resolve()
     demos_dir = omz_dir / 'demos'
     auto_tools_dir = omz_dir / 'tools/model_tools'
 
+    # Get info about models by info_dumper
     model_info_list = json.loads(subprocess.check_output(
         [sys.executable, '--', str(auto_tools_dir / 'info_dumper.py'), '--all'],
         universal_newlines=True))
@@ -216,25 +249,9 @@ def main():
         for model in models_list:
             model_info[model['name']] = model
 
-    if args.demos is not None:
-        names_of_demos_to_test = set(args.demos.split(','))
-        if all(impl in Demo.IMPLEMENTATION_TYPES for impl in names_of_demos_to_test):
-            names_of_demos_to_test = {demo.subdirectory for demo in DEMOS if demo.implementation in names_of_demos_to_test}
+    demos_to_test = get_demos_to_test(DEMOS, args.demos)
 
-        demos_to_test = [demo for demo in DEMOS if demo.subdirectory in names_of_demos_to_test]
-    else:
-        demos_to_test = DEMOS
-
-    if len(demos_to_test) == 0:
-        if args.demos:
-            print("List of demos to test is empty.")
-            print(f"Command line argument '--demos {args.demos}' was passed, check that you've specified correct value from the list below:")
-            print(*(list(Demo.IMPLEMENTATION_TYPES) + [demo.subdirectory for demo in DEMOS]), sep=',')
-        raise RuntimeError("Not found demos to test!")
-
-    print(f"{len(demos_to_test)} demos will be tested:")
-    print(*[demo.subdirectory for demo in demos_to_test], sep =',')
-
+    parser = PerformanceParser()
     with temp_dir_as_path() as global_temp_dir:
         if args.models_dir:
             dl_dir = args.models_dir
@@ -257,6 +274,7 @@ def main():
 
         failed_tests = []
         for demo in demos_to_test:
+            demo_results = []
             header = 'Testing {}'.format(demo.subdirectory)
             print(header)
             print()
@@ -281,8 +299,9 @@ def main():
                 )
 
                 def resolve_arg(arg):
-                    if isinstance(arg, str): return arg
-                    return arg.resolve(arg_context)
+                    if issubclass(type(arg), Arg):
+                        return arg.resolve(arg_context)
+                    return str(arg)
 
                 def option_to_args(key, value):
                     if value is None: return [key]
@@ -331,7 +350,7 @@ def main():
                                 stderr=subprocess.STDOUT, universal_newlines=True, encoding='utf-8',
                                 env=demo_environment, timeout=600)
                             execution_time = timeit.default_timer() - start_time
-                            demo.parse_output(output, test_case, device)
+                            demo_results.append((output, test_case, device))
                         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
                             output = e.output
                             if isinstance(e, subprocess.CalledProcessError):
@@ -353,6 +372,10 @@ def main():
                             write_log(output, args.log_file)
 
             print()
+            # Parse demo results
+            if demo.parser:
+                parser(demo.subdirectory, demo_results)
+
 
     print("{} failures:".format(num_failures))
     for test in failed_tests:

@@ -1,0 +1,137 @@
+demos:
+  - name: classification_benchmark_demo
+    parameters:
+      implementation: cpp
+      device_keys:
+        - d
+    cases:
+      no_show: None
+      time: 5
+      input: classification
+      labels: data/dataset_classes/imagenet_2012.txt
+      model:
+        - alexnet
+        - googlenet-v3-pytorch
+        - mobilenet-v2-pytorch
+
+  # Example with several architecture types
+  - name: human_pose_estimation_demo
+    parameters:
+      implementation: cpp
+      device_keys:
+        - d
+    cases:
+      no_show: None
+      input: human-pose-estimation
+      split:
+        - architecture_type: openpose
+          model:
+            - human-pose-estimation-0001
+        - architecture_type: higherhrnet
+          model:
+            - higher-hrnet-w32-human-pose-estimation
+        - architecture_type: ae
+          model:
+            - human-pose-estimation-0005
+            - human-pose-estimation-0006
+            - human-pose-estimation-0007
+
+  # Example with preprocessing parameters for model
+  - name: object_detection_demo
+    parameters:
+      implementation: cpp
+      device_keys:
+        - d
+    cases:
+      no_show: None
+      input: object-detection-demo
+      split:
+        - architecture_type: centernet
+          split:
+            - model: ctdet_coco_dlav0_512
+            - model:
+                name: ctdet_coco_dlav0_512
+                file_name: ctdet_coco_dlav0_512.onnx
+              mean_values: "104.04 113.985 119.85"
+              scale_values: "73.695 69.87 70.89"
+        - architecture_type: faceboxes
+          split:
+            - model: faceboxes-pytorch
+            - model:
+                name: faceboxes-pytorch
+                file_name: faceboxes-pytorch.onnx
+              mean_values: "104.0 117.0 123.0"
+        - architecture_type: retinaface-pytorch
+          split:
+            - model: retinaface-resnet50-pytorch
+            - model:
+                name: retinaface-resnet50-pytorch
+                file_name: retinaface-resnet50-pytorch.onnx
+              mean_values: 104.0, 117.0, 123.0
+        - architecture_type: ssd
+          split:
+            - model:
+                - efficientdet-d1-tf
+                - face-detection-0206
+                - pedestrian-detection-adas-0002
+                - retinanet-tf
+                - ssd512
+                - vehicle-detection-0201
+            - model:
+                name: ssd-resnet34-1200-onnx
+                file_name: resnet34-ssd1200.onnx
+              reverse_input_channels: None
+              mean_values: 123.675, 116.28, 103.53
+              scale_values: 58.395, 57.12, 57.375
+
+  # Example with using different inputs for certain sets of model
+  - name: segmentation_demo
+    parameters:
+      implementation: cpp
+      device_keys:
+        - d
+    cases:
+      no_show: None
+      split:
+        - input: road-segmentation-adas
+          model: road-segmentation-adas-0001
+        - input: semantic-segmentation-adas
+          model:
+            - semantic-segmentation-adas-0001
+            - fastseg-large
+            - hrnet-v2-c1-segmentation
+            - pspnet-pytorch
+
+  # Example with composite model
+  - name: smart_classroom_demo
+    parameters:
+      implementation: cpp
+      device_keys:
+        - d_act
+        - d_fd
+        - d_lm
+        - d_reid
+      model_keys:
+        - m_act
+        - m_fd
+        - m_lm
+        - m_reid
+    cases:
+      no_show: None
+      input: smart-classroom-demo
+      model_fd:
+        - face-detection-adas-0001
+      split:
+        - model_act:
+            - person-detection-raisinghand-recognition-0001
+          a_top: 5
+        - split:
+            - model_act: person-detection-action-recognition-0005
+            - model_act: person-detection-action-recognition-0006
+              student_ac: sitting,writing,raising_hand,standing,turned_around,lie_on_the_desk
+            - model_act: person-detection-action-recognition-teacher-0002
+          model_lm:
+            - landmarks-regression-retail-0009
+          model_reid:
+            - Sphereface
+            - face-recognition-resnet100-arcface-onnx
