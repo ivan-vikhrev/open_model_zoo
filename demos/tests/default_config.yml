@@ -1,40 +1,228 @@
+# config for testing all of demos (number of demos = 60, cpp_gapi = 6, cpp = 18, python = 36)
 demos:
+  - name: background_subtraction_demo
+    parameters:
+      implementation: cpp_gapi
+    cases:
+      input: instance-segmentation
+      no_show: true
+      architecture_type: maskrcnn
+      model:
+        - instance-segmentation-person-0007
+        - instance-segmentation-security-0091
+
+  - name: gaze_estimation_demo
+    parameters:
+      implementation: cpp_gapi
+      device_keys: [d, d_fd, d_hp, d_lm]
+      model_keys: [m, m_fd, m_hp, m_lm, m_es]
+    cases:
+      no_show: true
+      input: gaze-estimation-adas
+      model: gaze-estimation-adas-0002
+      model_hp: head-pose-estimation-adas-0001
+      model_es: open-closed-eye-0001
+      model_lm: facial-landmarks-35-adas-0002
+      model_fd:
+        - face-detection-adas-0001
+        - face-detection-retail-0004
+
+  - name: gesture_recognition_demo
+    parameters:
+      implementation: cpp_gapi
+      device_keys: [d_a, d_d]
+      model_keys: [m_a, m_d]
+    cases:
+      no_show: true
+      input: msasl/global_crops/_nz_sivss20/clip_0017/img_%05d.jpg
+      model_d: person-detection-asl-0001
+      split:
+        - model_a: asl-recognition-0004
+          c: data/dataset_classes/msasl100.json
+        - model_a: common-sign-language-0001
+          c: data/dataset_classes/jester27.json
+        - model_a: common-sign-language-0002
+          c: data/dataset_classes/common_sign_language12.json
+
   - name: classification_benchmark_demo
     parameters:
       implementation: cpp
-      device_keys:
-        - d
     cases:
-      no_show: None
+      no_show: true
       time: 5
       input: classification
       labels: data/dataset_classes/imagenet_2012.txt
       model:
         - alexnet
         - googlenet-v3-pytorch
+        - mobilenet-v2
         - mobilenet-v2-pytorch
+        - densenet-121-tf
+        - googlenet-v1
+        - googlenet-v1-tf
+        - googlenet-v3
+        - mixnet-l
+        - repvgg-a0
+        - repvgg-b1
+        - repvgg-b3
+
+  - name: crossroad_camera_demo
+    parameters:
+      implementation: cpp
+      device_keys: [d, d_pa, d_reid]
+      model_keys: [m, m_pa, m_reid]
+    cases:
+      no_show: true
+      input: person-vehicle-bike-detection-crossroad
+      model: person-vehicle-bike-detection-crossroad-0078
+      model_pa:
+        - None
+        - person-attributes-recognition-crossroad-0230
+      model_reid:
+        - None
+        - person-reidentification-retail-0277
+        - person-reidentification-retail-0286
+        - person-reidentification-retail-0287
+        - person-reidentification-retail-0288
+
+  - name: gaze_estimation_demo
+    parameters:
+      implementation: cpp
+      device_keys: [d, d_fd, d_hp, d_lm]
+      model_keys: [m, m_fd, m_hp, m_lm, m_es]
+    cases:
+      no_show: true
+      input: gaze-estimation-adas
+      model: gaze-estimation-adas-0002
+      model_hp: head-pose-estimation-adas-0001
+      model_es: open-closed-eye-0001
+      model_lm:
+        - facial-landmarks-35-adas-0002
+        - facial-landmarks-98-detection-0001
+      model_fd:
+        - face-detection-adas-0001
+        - face-detection-retail-0004
 
   # Example with several architecture types
   - name: human_pose_estimation_demo
     parameters:
       implementation: cpp
-      device_keys:
-        - d
     cases:
-      no_show: None
+      no_show: true
       input: human-pose-estimation
       split:
         - architecture_type: openpose
-          model:
-            - human-pose-estimation-0001
+          model: human-pose-estimation-0001
         - architecture_type: higherhrnet
-          model:
-            - higher-hrnet-w32-human-pose-estimation
+          model: higher-hrnet-w32-human-pose-estimation
         - architecture_type: ae
           model:
             - human-pose-estimation-0005
             - human-pose-estimation-0006
             - human-pose-estimation-0007
+
+  - name: image_processing_demo
+    parameters:
+      implementation: cpp
+    cases:
+      no_show: true
+      input: single-image-super-resolution
+      split:
+        - architecture_type: sr
+          model:
+            - single-image-super-resolution-1032
+            - single-image-super-resolution-1033
+            - text-image-super-resolution-0001
+        - architecture_type: deblur
+          model: deblurgan-v2
+        - architecture_type: jr
+          model: fbcnn
+
+  - name: interactive_face_detection_demo
+    parameters:
+      implementation: cpp
+      model_keys: [m, m_ag, m_em, m_lm, m_hp, m_am]
+    cases:
+      noshow: true
+      input: 375x500
+      split:
+        - model: face-detection-adas-0001
+        - model: face-detection-retail-0004
+          model_ag: age-gender-recognition-retail-0013
+          model_am: anti-spoof-mn3
+          model_em: emotions-recognition-retail-0003
+          model_hp: head-pose-estimation-adas-0001
+          model_lm: facial-landmarks-35-adas-0002
+
+  - name: mask_rcnn_demo
+    parameters:
+      implementation: cpp
+    cases:
+      input: instance-segmentaion-mask-rcnn
+      model:
+        - mask_rcnn_inception_resnet_v2_atrous_coco
+        - mask_rcnn_resnet50_atrous_coco
+
+  - name: multi_channel_face_detection_demo
+    parameters:
+      implementation: cpp
+    cases:
+      no_show: true
+      input: face-detection-adas
+      split:
+        - model: face-detection-adas-0001
+        - model: face-detection-retail-0004
+          bs: 2
+          show_stats: true
+          n_iqs: 1
+          duplicate_num: 2
+        - model: face-detection-retail-0005
+          bs: 3
+          n_iqs: 999
+        - model: face-detection-retail-0044
+          bs: 4
+          show_stats: true
+          duplicate_num: 3
+          real_input_fps: true
+
+  - name: multi_channel_human_pose_estimation_demo
+    parameters:
+      implementation: cpp
+    cases:
+      no_show: true
+      input: human-pose-estimation
+      model: human-pose-estimation-0001
+
+  - name: multi_channel_object_detection_demo_yolov3
+    parameters:
+      implementation: cpp
+    cases:
+      no_show: true
+      input: object-detection-demo
+      split:
+        - model: person-vehicle-bike-detection-crossroad-yolov3-1020
+        - model: yolo-v3-tf
+          duplicate_num: 2
+          n_iqs: 20
+          fps_sp: 1
+          n_sp: 1
+          show_stats: true
+          real_input_fps: true
+        - model: yolo-v3-tiny-tf
+          duplicate_num: 3
+          n_iqs: 9999
+          fps_sp: 50
+          n_sp: 30
+
+  # need new audio file
+  - name: noise_suppression_demo
+    parameters:
+      implementation: cpp
+    cases:
+      input: test_audiofile.wav
+      model:
+        - noise-suppression-denseunet-ll-0001
+        - noise-suppression-poconetlike-0001
 
   # Example with preprocessing parameters for model
   - name: object_detection_demo
@@ -43,7 +231,7 @@ demos:
       device_keys:
         - d
     cases:
-      no_show: None
+      no_show: true
       input: object-detection-demo
       split:
         - architecture_type: centernet
@@ -71,18 +259,76 @@ demos:
         - architecture_type: ssd
           split:
             - model:
-                - efficientdet-d1-tf
                 - face-detection-0206
+                - face-detection-retail-0005
+                - faster-rcnn-resnet101-coco-sparse-60-0001
                 - pedestrian-detection-adas-0002
+                - pelee-coco
+                - person-vehicle-bike-detection-2001
                 - retinanet-tf
                 - ssd512
+                - ssdlite_mobilenet_v2
                 - vehicle-detection-0201
+                - vehicle-license-plate-detection-barrier-0106
             - model:
                 name: ssd-resnet34-1200-onnx
                 file_name: resnet34-ssd1200.onnx
               reverse_input_channels: None
               mean_values: 123.675, 116.28, 103.53
               scale_values: 58.395, 57.12, 57.375
+        - architecture_type: yolo
+          model:
+            - mobilenet-yolo-v4-syg
+            - person-vehicle-bike-detection-crossroad-yolov3-1020
+            - yolo-v1-tiny-tf
+            - yolo-v2-ava-0001
+            - yolo-v2-ava-sparse-35-0001
+            - yolo-v2-ava-sparse-70-0001
+            - yolo-v3-tf
+
+  - name: pedestrian_tracker_demo
+    parameters:
+      implementation: cpp
+      model_keys: [m_det, m_reid]
+      device_keys: [d_det, d_reid]
+    cases:
+      no_show: true
+      input: person-detection-retail
+      split:
+        - architecture_type: ssd
+          split:
+            - model_det: person-detection-retail-0002
+            - model_det: person-detection-retail-0013
+            - model_det: retinanet-tf
+              person_label: 1
+        - architecture_type: yolo
+          model_det: yolo-v3-tf
+          person_label: 0
+        - architecture_type: centernet
+          model_det: ctdet_coco_dlav0_512
+          person_label: 0
+      model_reid:
+        - person-reidentification-retail-0277
+        - person-reidentification-retail-0286
+        - person-reidentification-retail-0287
+        - person-reidentification-retail-0288
+
+  - name: security_barrier_camera_demo
+    parameters:
+      implementation: cpp
+      model_keys: [m, m_lpr, m_va]
+      device_keys: [d, d_lpr, d_va]
+    cases:
+      no_show: true
+      input: vehicle-license-plate-detection-barrier
+      model: vehicle-license-plate-detection-barrier-0106
+      model_lpr:
+        - None
+        - license-plate-recognition-barrier-0001
+        - license-plate-recognition-barrier-0007
+      model_va:
+        - None
+        - vehicle-attributes-recognition-barrier-0039
 
   # Example with using different inputs for certain sets of model
   - name: segmentation_demo
@@ -97,12 +343,16 @@ demos:
           model: road-segmentation-adas-0001
         - input: semantic-segmentation-adas
           model:
+            - fastseg-small
+            - deeplabv3
+            - drn-d-38
+            - ocrnet-hrnet-w48-paddle
             - semantic-segmentation-adas-0001
             - fastseg-large
             - hrnet-v2-c1-segmentation
             - pspnet-pytorch
 
-  # Example with composite model
+  # Example with several model keys
   - name: smart_classroom_demo
     parameters:
       implementation: cpp
@@ -135,3 +385,61 @@ demos:
           model_reid:
             - Sphereface
             - face-recognition-resnet100-arcface-onnx
+
+  - name: social_distance_demo
+    parameters:
+      implementation: cpp
+      device_keys: [d_det, d_reid]
+      model_keys: [m_det, m_reid]
+    cases:
+      no_show: true
+      input: person-detection-retail
+      model_det:
+        - person-detection-0200
+        - person-detection-0201
+        - person-detection-0202
+        - person-detection-retail-0013
+      model_reid:
+        - person-reidentification-retail-0277
+        - person-reidentification-retail-0287
+
+  # consider extra models parameter
+  - name: text_detection_demo
+    parameters:
+      implementation: cpp
+      device_keys: [d_td, d_tr]
+      model_keys: [m_td, m_tr]
+    cases:
+      no_show: true
+      input: text-detection
+      model_td:
+        - text-detection-0003
+        - text-detection-0004
+        - horizontal-text-detection-0001
+      split:
+        - dt: ctc
+          split:
+            - model_tr: None
+            - model_tr: text-recognition-0012
+            - model_tr: text-recognition-0014
+              tr_pt_first: true
+              tr_o_blb_nm: logits
+        - dt: simple
+          split:
+            - model_tr: text-recognition-resnet-fc
+              tr_pt_first: true
+            - model_tr: vitstr-small-patch16-224
+              tr_pt_first: true
+              m_tr_ss: models/public/vitstr-small-patch16-224/vocab.txt
+              start_index: 1
+              pad: " "
+            - model_tr: text-recognition-0015-encoder
+              tr_pt_first: true
+              tr_o_blb_nm: logits
+              m_tr_ss: '?0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+              extra_models: text-recognition-0015-decoder
+            - model_tr: text-recognition-0016-encoder
+              tr_pt_first: true
+              tr_o_blb_nm: logits
+              m_tr_ss: '?0123456789abcdefghijklmnopqrstuvwxyz'
+              extra_models: text-recognition-0016-decoder
