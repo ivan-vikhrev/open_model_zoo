@@ -1,5 +1,6 @@
 # config for testing all of demos (number of demos = 60, cpp_gapi = 6, cpp = 18, python = 36)
 demos:
+  # CPP_GAPI Demos
   - name: background_subtraction_demo
     parameters:
       implementation: cpp_gapi
@@ -44,6 +45,62 @@ demos:
         - model_a: common-sign-language-0002
           c: data/dataset_classes/common_sign_language12.json
 
+  - name: face_detection_mtcnn_demo
+    parameters:
+      implementation: cpp_gapi
+      model_keys: [m_p, m_r, m_o]
+      device_keys: [d_p, d_r, d_o]
+    cases:
+      no_show: true
+      input: ILSVRC2012_img_val/ILSVRC2012_val_00000002.JPEG
+      model_p: mtcnn-p
+      model_r: mtcnn-r
+      model_o: mtcnn-o
+
+  - name: smart_classroom_demo
+    parameters:
+      implementation: cpp_gapi
+      device_keys: [d_act, d_fd, d_lm, d_reid]
+      model_keys: [m_act, m_fd, m_lm, m_reid]
+    cases:
+      no_show: true
+      input: smart-classroom-demo
+      model_fd: face-detection-adas-0001
+      split:
+        - model_act:
+            - person-detection-raisinghand-recognition-0001
+          a_top: 5
+        - split:
+            - model_act: person-detection-action-recognition-0005
+            - model_act: person-detection-action-recognition-0006
+              student_ac: sitting,writing,raising_hand,standing,turned_around,lie_on_the_desk
+            - model_act: person-detection-action-recognition-teacher-0002
+          split_1:
+            - None
+            - model_lm:
+                - landmarks-regression-retail-0009
+              model_reid:
+                - Sphereface
+                - face-recognition-resnet100-arcface-onnx
+
+  - name: interactive_face_detection_demo
+    parameters:
+      implementation: cpp_gapi
+      model_keys: [m, m_ag, m_em, m_lm, m_hp, m_am]
+      device_keys: [d, d_ag, d_em, d_lm, d_hp, d_am]
+    cases:
+      noshow: true
+      input: 375x500
+      split:
+        - model: face-detection-adas-0001
+        - model: face-detection-retail-0004
+          model_ag: age-gender-recognition-retail-0013
+          model_am: anti-spoof-mn3
+          model_em: emotions-recognition-retail-0003
+          model_hp: head-pose-estimation-adas-0001
+          model_lm: facial-landmarks-35-adas-0002
+
+  # CPP Demos
   - name: classification_benchmark_demo
     parameters:
       implementation: cpp
@@ -436,10 +493,10 @@ demos:
             - model_tr: text-recognition-0015-encoder
               tr_pt_first: true
               tr_o_blb_nm: logits
-              m_tr_ss: '?0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+              m_tr_ss: "?0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
               extra_models: text-recognition-0015-decoder
             - model_tr: text-recognition-0016-encoder
               tr_pt_first: true
               tr_o_blb_nm: logits
-              m_tr_ss: '?0123456789abcdefghijklmnopqrstuvwxyz'
+              m_tr_ss: "?0123456789abcdefghijklmnopqrstuvwxyz"
               extra_models: text-recognition-0016-decoder

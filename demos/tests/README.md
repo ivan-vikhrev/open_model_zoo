@@ -8,6 +8,7 @@ Tests cases are represented as `yaml` file.
 
 To start testing you should run the next script `run_tests.py`.
 Running the script with the `-h` option yields the following usage message:
+
 ```
 usage: run_tests.py [-h] --demo-build-dir DIR --test-data-dir DIR --downloader-cache-dir DIR [--demos DEMO[,DEMO...]]
                     [--scope {base,performance,custom}] [--mo MO.PY] [--devices DEVICES] [--report-file REPORT_FILE] [--log-file LOG_FILE]
@@ -49,7 +50,8 @@ optional arguments:
   --models-dir DIR      directory with pre-converted models (IRs)
 ```
 
-Example: 
+Example:
+
 ```
 python3 run_tests.py --demo-build-dir <path_to_binaries> \
                      --test-data-dir <path_to_folder_with_datasets> \

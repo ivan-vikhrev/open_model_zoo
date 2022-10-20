@@ -14,13 +14,13 @@
 
 import collections
 import shutil
-
 from pathlib import Path
 
-ArgContext = collections.namedtuple('ArgContext',
-    ['test_data_dir', 'dl_dir', 'model_info', 'data_sequences', 'data_sequence_dir'])
+ArgContext = collections.namedtuple(
+    "ArgContext", ["test_data_dir", "dl_dir", "model_info", "data_sequences", "data_sequence_dir"]
+)
 
-RequestedModel = collections.namedtuple('RequestedModel', ['name', 'precisions'])
+RequestedModel = collections.namedtuple("RequestedModel", ["name", "precisions"])
 
 OMZ_DIR = Path(__file__).parents[2].resolve()
 
@@ -39,15 +39,15 @@ class TestDataArg(AbstractArg):
 
 
 def image_net_arg(id):
-    return TestDataArg('ILSVRC2012_img_val/ILSVRC2012_val_{}.JPEG'.format(id))
+    return TestDataArg("ILSVRC2012_img_val/ILSVRC2012_val_{}.JPEG".format(id))
 
 
 def brats_arg(id):
-    return TestDataArg('BraTS/{}'.format(id))
+    return TestDataArg("BraTS/{}".format(id))
 
 
 def image_retrieval_arg(id):
-    return TestDataArg('Image_Retrieval/{}'.format(id))
+    return TestDataArg("Image_Retrieval/{}".format(id))
 
 
 class AbstractModelArg(AbstractArg):
@@ -62,7 +62,9 @@ class ModelArg(AbstractModelArg):
         self.precision = precision
 
     def resolve(self, context):
-        return str(context.dl_dir / context.model_info[self.name]["subdirectory"] / self.precision / (self.name + '.xml'))
+        return str(
+            context.dl_dir / context.model_info[self.name]["subdirectory"] / self.precision / (self.name + ".xml")
+        )
 
     @property
     def required_models(self):
@@ -88,13 +90,12 @@ class DataPatternArg(AbstractArg):
 
     def resolve(self, context):
         seq_dir = context.data_sequence_dir / self.sequence_name
-        seq = [Path(data.resolve(context))
-            for data in context.data_sequences[self.sequence_name]]
+        seq = [Path(data.resolve(context)) for data in context.data_sequences[self.sequence_name]]
 
         assert len({data.suffix for data in seq}) == 1, "all images in the sequence must have the same extension"
-        assert '%' not in seq[0].suffix
+        assert "%" not in seq[0].suffix
 
-        name_format = 'input-%04d' + seq[0].suffix
+        name_format = "input-%04d" + seq[0].suffix
 
         if not seq_dir.is_dir():
             seq_dir.mkdir(parents=True)
@@ -120,8 +121,7 @@ class DataDirectoryOrigFileNamesArg(AbstractArg):
 
     def resolve(self, context):
         seq_dir = context.data_sequence_dir / self.sequence_name
-        seq = [data.resolve(context)
-            for data in context.data_sequences[self.sequence_name]]
+        seq = [data.resolve(context) for data in context.data_sequences[self.sequence_name]]
 
         if not seq_dir.is_dir():
             seq_dir.mkdir(parents=True)
