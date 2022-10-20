@@ -48,20 +48,20 @@ DEFINE_uint32(lim, 1000, lim_msg);
 constexpr char loop_msg[] = "enable reading the input in a loop";
 DEFINE_bool(loop, false, loop_msg);
 
-constexpr char mag_msg[] = "path to an .xml file with a trained Age/Gender Recognition model";
-DEFINE_string(mag, "", mag_msg);
+constexpr char m_ag_msg[] = "path to an .xml file with a trained Age/Gender Recognition model";
+DEFINE_string(m_ag, "", m_ag_msg);
 
-constexpr char mam_msg[] = "path to an .xml file with a trained Antispoofing Classification model";
-DEFINE_string(mam, "", mam_msg);
+constexpr char m_am_msg[] = "path to an .xml file with a trained Antispoofing Classification model";
+DEFINE_string(m_am, "", m_am_msg);
 
-constexpr char mem_msg[] = "path to an .xml file with a trained Emotions Recognition model";
-DEFINE_string(mem, "", mem_msg);
+constexpr char m_em_msg[] = "path to an .xml file with a trained Emotions Recognition model";
+DEFINE_string(m_em, "", m_em_msg);
 
-constexpr char mhp_msg[] = "path to an .xml file with a trained Head Pose Estimation model";
-DEFINE_string(mhp, "", mhp_msg);
+constexpr char m_hp_msg[] = "path to an .xml file with a trained Head Pose Estimation model";
+DEFINE_string(m_hp, "", m_hp_msg);
 
-constexpr char mlm_msg[] = "path to an .xml file with a trained Facial Landmarks Estimation model";
-DEFINE_string(mlm, "", mlm_msg);
+constexpr char m_lm_msg[] = "path to an .xml file with a trained Facial Landmarks Estimation model";
+DEFINE_string(m_lm, "", m_lm_msg);
 
 constexpr char o_msg[] = "name of the output file(s) to save";
 DEFINE_string(o, "", o_msg);
@@ -99,11 +99,11 @@ void parse(int argc, char *argv[]) {
                   << "\n\t[--fps <NUMBER>]                              " << fps_msg
                   << "\n\t[--lim <NUMBER>]                              " << lim_msg
                   << "\n\t[--loop]                                      " << loop_msg
-                  << "\n\t[--mag <MODEL FILE>]                          " << mag_msg
-                  << "\n\t[--mam <MODEL FILE>]                          " << mam_msg
-                  << "\n\t[--mem <MODEL FILE>]                          " << mem_msg
-                  << "\n\t[--mhp <MODEL FILE>]                          " << mhp_msg
-                  << "\n\t[--mlm <MODEL FILE>]                          " << mlm_msg
+                  << "\n\t[--m_ag <MODEL FILE>]                         " << m_ag_msg
+                  << "\n\t[--m_am <MODEL FILE>]                         " << m_am_msg
+                  << "\n\t[--m_em <MODEL FILE>]                         " << m_em_msg
+                  << "\n\t[--m_hp <MODEL FILE>]                         " << m_hp_msg
+                  << "\n\t[--m_lm <MODEL FILE>]                         " << m_lm_msg
                   << "\n\t[ -o <OUTPUT>]                                " << o_msg
                   << "\n\t[ -r]                                         " << r_msg
                   << "\n\t[--show] ([--noshow])                         " << show_msg
@@ -137,11 +137,11 @@ int main(int argc, char *argv[]) {
 
     FaceDetection faceDetector(FLAGS_m, FLAGS_t, FLAGS_r,
                                 static_cast<float>(FLAGS_bb_enlarge_coef), static_cast<float>(FLAGS_dx_coef), static_cast<float>(FLAGS_dy_coef));
-    AgeGenderDetection ageGenderDetector(FLAGS_mag, FLAGS_r);
-    HeadPoseDetection headPoseDetector(FLAGS_mhp, FLAGS_r);
-    EmotionsDetection emotionsDetector(FLAGS_mem, FLAGS_r);
-    FacialLandmarksDetection facialLandmarksDetector(FLAGS_mlm, FLAGS_r);
-    AntispoofingClassifier antispoofingClassifier(FLAGS_mam, FLAGS_r);
+    AgeGenderDetection ageGenderDetector(FLAGS_m_ag, FLAGS_r);
+    HeadPoseDetection headPoseDetector(FLAGS_m_hp, FLAGS_r);
+    EmotionsDetection emotionsDetector(FLAGS_m_em, FLAGS_r);
+    FacialLandmarksDetection facialLandmarksDetector(FLAGS_m_lm, FLAGS_r);
+    AntispoofingClassifier antispoofingClassifier(FLAGS_m_am, FLAGS_r);
     // ---------------------------------------------------------------------------------------------------
 
     // --------------------------- 2. Reading IR models and loading them to plugins ----------------------

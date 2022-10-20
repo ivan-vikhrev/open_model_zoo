@@ -83,11 +83,11 @@ Running the demo with `-h` shows this help message:
     [--fps <NUMBER>]                              maximum FPS for playing video
     [--lim <NUMBER>]                              number of frames to store in output. If 0 is set, all frames are stored. Default is 1000
     [--loop]                                      enable reading the input in a loop
-    [--mag <MODEL FILE>]                          path to an .xml file with a trained Age/Gender Recognition model
-    [--mam <MODEL FILE>]                          path to an .xml file with a trained Antispoofing Classification model
-    [--mem <MODEL FILE>]                          path to an .xml file with a trained Emotions Recognition model
-    [--mhp <MODEL FILE>]                          path to an .xml file with a trained Head Pose Estimation model
-    [--mlm <MODEL FILE>]                          path to an .xml file with a trained Facial Landmarks Estimation model
+    [--m_ag <MODEL FILE>]                         path to an .xml file with a trained Age/Gender Recognition model
+    [--m_am <MODEL FILE>]                         path to an .xml file with a trained Antispoofing Classification model
+    [--m_em <MODEL FILE>]                         path to an .xml file with a trained Emotions Recognition model
+    [--m_hp <MODEL FILE>]                         path to an .xml file with a trained Head Pose Estimation model
+    [--m_lm <MODEL FILE>]                         path to an .xml file with a trained Facial Landmarks Estimation model
     [ -o <OUTPUT>]                                name of the output file(s) to save
     [ -r]                                         output inference results as raw values
     [--show] ([--noshow])                         (don't) show output

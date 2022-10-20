@@ -1,4 +1,4 @@
-# Copyright (c) 2019 Intel Corporation
+# Copyright (c) 2019-2022 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,7 +25,12 @@ RequestedModel = collections.namedtuple('RequestedModel', ['name', 'precisions']
 OMZ_DIR = Path(__file__).parents[2].resolve()
 
 
-class TestDataArg:
+class AbstractArg:
+    def resolve(self, context):
+        raise NotImplementedError
+
+
+class TestDataArg(AbstractArg):
     def __init__(self, rel_path):
         self.rel_path = rel_path
 
@@ -45,16 +50,13 @@ def image_retrieval_arg(id):
     return TestDataArg('Image_Retrieval/{}'.format(id))
 
 
-class Arg:
+class AbstractModelArg(AbstractArg):
     @property
     def required_models(self):
         return []
 
-    def resolve(self, context):
-        raise NotImplementedError
 
-
-class ModelArg(Arg):
+class ModelArg(AbstractModelArg):
     def __init__(self, name, precision=None):
         self.name = name
         self.precision = precision
@@ -67,7 +69,7 @@ class ModelArg(Arg):
         return [RequestedModel(self.name, [])]
 
 
-class ModelFileArg(Arg):
+class ModelFileArg(AbstractModelArg):
     def __init__(self, name, file_name):
         self.name = name
         self.file_name = file_name
@@ -80,7 +82,7 @@ class ModelFileArg(Arg):
         return [RequestedModel(self.name, [])]
 
 
-class DataPatternArg(Arg):
+class DataPatternArg(AbstractArg):
     def __init__(self, sequence_name):
         self.sequence_name = sequence_name
 
@@ -103,7 +105,7 @@ class DataPatternArg(Arg):
         return str(seq_dir / name_format)
 
 
-class DataDirectoryArg(Arg):
+class DataDirectoryArg(AbstractArg):
     def __init__(self, sequence_name):
         self.backend = DataPatternArg(sequence_name)
 
@@ -112,7 +114,7 @@ class DataDirectoryArg(Arg):
         return str(Path(pattern).parent)
 
 
-class DataDirectoryOrigFileNamesArg(Arg):
+class DataDirectoryOrigFileNamesArg(AbstractArg):
     def __init__(self, sequence_name):
         self.sequence_name = sequence_name
 

@@ -18,7 +18,7 @@ from typing import List, Union
 from pathlib import Path
 import yaml
 
-from args import DataDirectoryOrigFileNamesArg, ModelArg, ModelFileArg, OMZ_DIR
+from args import DataDirectoryOrigFileNamesArg, ModelArg, ModelFileArg, OMZ_DIR, TestDataArg
 
 
 # Constructions for registering classes (one of the variants of factories)
@@ -100,14 +100,19 @@ def combine_cases(*args) -> List[dict]:
 
 
 def handle_single_option(option_name, value) -> dict:
+    if value is None or value == 'None':
+        return {}
     if isinstance(value, dict):
         return {option_name: ModelFileArg(**value)}
     result_value = value
-    if option_name == 'model':
+    if 'model' in option_name:
         result_value = ModelArg(value)
     if option_name == 'input':
-        result_value = DataDirectoryOrigFileNamesArg(value)
-    if option_name == 'labels':
+        if '.' in value:
+            result_value = TestDataArg(value)
+        else:
+            result_value = DataDirectoryOrigFileNamesArg(value)
+    if option_name in ['labels', 'c', 'm_tr_ss']:
         if not Path(value).exists():
             result_value = str(OMZ_DIR / value)
     return {option_name: result_value}
@@ -121,13 +126,15 @@ def handle_multi_option(key, *args) -> List[dict]:
 
 
 def get_test_options_from_config(options: dict) -> List[dict]:
+    if not options or options == 'None':
+        return [{}]
     general_level_options = {}
     result_options = [{}]
     for key, value in options.items():
-        if key != 'split' and not isinstance(value, List):
+        if 'split' not in key and not isinstance(value, List):
             general_level_options.update(handle_single_option(key, value))
         else:
-            if key == 'split':
+            if 'split' in key:
                 split_args = []
                 for elem in value:
                     split_args.extend(get_test_options_from_config(elem))
@@ -157,7 +164,7 @@ def correct_demo_flags(set_of_flags, implementation):
                 if flag.startswith(tuple(FLAGS_CPP.keys())):
                     for full, short in FLAGS_CPP.items():
                         flag = flag.replace(full, short)
-                flag = '-' + flag
+                flag = '--' + flag
             options[flag] = value
         new_flags.append(options)
     return new_flags

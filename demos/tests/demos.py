@@ -31,8 +31,14 @@ class Demo(ClassProvider):
             self.subdirectory = name +'/' + self.__provider__
         else:
             self.subdirectory = name
-        self.device_keys = device_keys
-        self.model_keys = model_keys if model_keys else ['-m']
+        if device_keys:
+            self.device_keys = ['--' + key for key in device_keys]
+        else:
+            self.device_keys = ['--d']
+        if model_keys:
+            self.model_keys = ['--' + key for key in model_keys]
+        else:
+            self.model_keys = ['--m']
 
         self.test_cases = test_cases
         self.parser = parser
@@ -127,6 +133,10 @@ class CppDemo(Demo):
         return [str(build_dir / self._exec_name)]
 
 
+class GapiDemo(CppDemo):
+    __provider__ = 'cpp_gapi'
+
+
 class PythonDemo(Demo):
     __provider__ = 'python'
     def __init__(self, name, model_keys=None, device_keys=None, test_cases=None):
@@ -150,7 +160,6 @@ def create_demos_from_yaml(config):
         implementation = parameters['implementation']
         test_options = get_test_options_from_config(demo_info['cases'])
         test_options = correct_demo_flags(test_options, implementation)
-        # print(test_options, end='\n\n')
         test_cases = [TestCase(options=demo_flags) for demo_flags in test_options]
         parameters.pop('implementation')
         parameters['test_cases'] = test_cases
