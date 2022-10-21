@@ -15,8 +15,26 @@
 import re
 from pathlib import Path
 
+from utils import ClassProvider
 
-class PerformanceParser:
+
+class Parser(ClassProvider):
+    __provider_type__ = "parser"
+
+    def __call__(self, subdirectory, demo_results):
+        raise NotImplementedError
+
+
+class BasicParser(Parser):
+    __provider__ = "basic"
+
+    def __call__(self, subdirectory, demo_results):
+        return demo_results
+
+
+class PerformanceParser(Parser):
+    __provider__ = "perf"
+
     def __init__(self, path_to_results=None):
         if path_to_results:
             self.result_dir = Path(path_to_results)
@@ -48,7 +66,7 @@ class PerformanceParser:
         result["Streams"] = test_case.options.get("-nstreams", "-")
         result["Threads"] = test_case.options.get("-nthreads", "-")
 
-        model_keys = [key for key in test_case.options if key.startswith("-m")]
+        model_keys = [key for key in test_case.options if key.startswith("--m")]
 
         if filename.stat().st_size == 0:
             models_col = [f"Model {key}" for key in model_keys]
@@ -62,6 +80,3 @@ class PerformanceParser:
         data = ",".join([device, *precisions, *models_names, *result.values()])
         with filename.open(mode="a") as f:
             print(data, file=f)
-
-
-PARSERS = {"usual": None, "perf": PerformanceParser}

@@ -19,7 +19,7 @@ Classes for description tested demo
 import sys
 
 from args import ModelArg
-from parsers import PARSERS
+from parsers import Parser
 from utils import (
     ClassProvider,
     TestCase,
@@ -32,7 +32,7 @@ from utils import (
 class Demo(ClassProvider):
     __provider_type__ = "demo"
 
-    def __init__(self, name, model_keys=None, device_keys=None, test_cases=None, parser=PARSERS["usual"]):
+    def __init__(self, name, model_keys=None, device_keys=None, test_cases=None, parser_name="basic"):
         if self.__provider__:
             self.subdirectory = name + "/" + self.__provider__
         else:
@@ -47,7 +47,10 @@ class Demo(ClassProvider):
             self.model_keys = ["--m"]
 
         self.test_cases = test_cases
-        self.parser = parser
+        if Parser.check_provider(parser_name):
+            self.parser_name = parser_name
+        else:
+            raise ValueError(f"There is no parser with name {parser_name}")
 
         self._exec_name = self.subdirectory.replace("/", "_")
         self.supported_devices = None
@@ -134,8 +137,8 @@ class Demo(ClassProvider):
 class CppDemo(Demo):
     __provider__ = "cpp"
 
-    def __init__(self, name, model_keys=None, device_keys=None, test_cases=None):
-        super().__init__(name, model_keys, device_keys, test_cases)
+    def __init__(self, name, model_keys=None, device_keys=None, test_cases=None, parser_name="basic"):
+        super().__init__(name, model_keys, device_keys, test_cases, parser_name)
 
         self._exec_name = self._exec_name.replace("_cpp", "")
 
@@ -150,8 +153,8 @@ class GapiDemo(CppDemo):
 class PythonDemo(Demo):
     __provider__ = "python"
 
-    def __init__(self, name, model_keys=None, device_keys=None, test_cases=None):
-        super().__init__(name, model_keys, device_keys, test_cases)
+    def __init__(self, name, model_keys=None, device_keys=None, test_cases=None, parser_name="basic"):
+        super().__init__(name, model_keys, device_keys, test_cases, parser_name)
 
         self._exec_name = self._exec_name.replace("_python", "")
 

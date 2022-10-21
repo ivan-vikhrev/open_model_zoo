@@ -43,7 +43,7 @@ from pathlib import Path
 
 from args import AbstractArg, AbstractModelArg, ArgContext, ModelArg
 from data_sequences import DATA_SEQUENCES
-from parsers import PerformanceParser
+from parsers import Parser
 from utils import read_yaml
 
 from demos import Demo, create_demos_from_yaml
@@ -262,6 +262,15 @@ def get_demos_to_test(demos_from_config, demos_from_args):
     return demos_to_test
 
 
+def get_parsers_from_demos(demos) -> dict:
+    parsers = {}
+    for demo in demos:
+        if demo.parser_name not in parsers:
+            parsers[demo.parser_name] = Parser.provide(demo.parser_name)
+
+    return parsers
+
+
 def main():
     args = parse_args()
 
@@ -289,7 +298,9 @@ def main():
 
     demos_to_test = get_demos_to_test(DEMOS, args.demos)
 
-    parser = PerformanceParser()
+    # Create needed parsers
+    parsers = get_parsers_from_demos(demos_to_test)
+
     with temp_dir_as_path() as global_temp_dir:
         if args.models_dir:
             dl_dir = args.models_dir
@@ -447,8 +458,7 @@ def main():
 
             print()
             # Parse demo results
-            if demo.parser:
-                parser(demo.subdirectory, demo_results)
+            parsers[demo.parser_name](demo.subdirectory, demo_results)
 
     print("{} failures:".format(num_failures))
     for test in failed_tests:

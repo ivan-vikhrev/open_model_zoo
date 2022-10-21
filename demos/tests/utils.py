@@ -47,6 +47,12 @@ class BaseProvider:
         return root_provider(*args, **kwargs)
 
     @classmethod
+    def check_provider(cls, name):
+        if name not in cls.providers:
+            return False
+        return True
+
+    @classmethod
     def resolve(cls, name):
         if name not in cls.providers:
             raise UnregisteredProviderException(name, cls.__provider_type__)

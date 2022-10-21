@@ -1,4 +1,4 @@
-# config for testing all of demos (number of demos = 60, cpp_gapi = 6, cpp = 18, python = 36)
+# config for testing all of demos (number of demos = 60, cpp_gapi = 6/6, cpp = 18, python = 36)
 demos:
   # CPP_GAPI Demos
   - name: background_subtraction_demo
@@ -104,6 +104,7 @@ demos:
   - name: classification_benchmark_demo
     parameters:
       implementation: cpp
+      parser_name: perf
     cases:
       no_show: true
       time: 5
@@ -500,3 +501,6 @@ demos:
               tr_o_blb_nm: logits
               m_tr_ss: "?0123456789abcdefghijklmnopqrstuvwxyz"
               extra_models: text-recognition-0016-decoder
+
+  # PYTHON Demos
+  

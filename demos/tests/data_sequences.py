@@ -12,13 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from args import (
-    brats_arg,
-    custom_audio_dataset_arg,
-    custom_image_dataset_arg,
-    image_net_arg,
-    image_retrieval_arg,
-)
+from args import brats_arg, image_net_arg, image_retrieval_arg
 
 DATA_SEQUENCES = {
     "375x500": [
@@ -57,15 +51,6 @@ DATA_SEQUENCES = {
     ],
     "brain-tumor-nifti": [
         brats_arg("BRATS_485.nii.gz"),
-    ],
-    "custom_audio": [
-        custom_audio_dataset_arg("61-70968-0000.wav"),
-    ],
-    "custom_20_models": [
-        custom_image_dataset_arg("1"),
-        custom_image_dataset_arg("2"),
-        custom_image_dataset_arg("3"),
-        custom_image_dataset_arg("4"),
     ],
     "face-detection-adas": [
         image_net_arg("00000002"),
