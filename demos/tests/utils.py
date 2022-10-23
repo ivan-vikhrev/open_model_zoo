@@ -17,13 +17,6 @@ from pathlib import Path
 from typing import List, Union
 
 import yaml
-from args import (
-    OMZ_DIR,
-    DataDirectoryOrigFileNamesArg,
-    ModelArg,
-    ModelFileArg,
-    TestDataArg,
-)
 
 # Constructions for registering classes (one of the variants of factories)
 
@@ -117,21 +110,9 @@ def combine_cases(*args) -> List[dict]:
 
 
 def handle_single_option(option_name, value) -> dict:
-    if value is None or value == "None":
+    if value is None:
         return {}
-    if isinstance(value, dict):
-        return {option_name: ModelFileArg(**value)}
     result_value = value
-    if "model" in option_name:
-        result_value = ModelArg(value)
-    if option_name == "input":
-        if "." in value:
-            result_value = TestDataArg(value)
-        else:
-            result_value = DataDirectoryOrigFileNamesArg(value)
-    if option_name in ["labels", "c", "m_tr_ss"]:
-        if not Path(value).exists():
-            result_value = str(OMZ_DIR / value)
     return {option_name: result_value}
 
 
@@ -164,7 +145,9 @@ def get_test_options_from_config(options: dict) -> List[dict]:
 
 # Correction demo options according to demo flags
 
-FLAGS_CPP = {"input": "i", "model": "m", "architecture_type": "at"}
+FLAGS_long_short = {"model": "m", "architecture_type": "at", "device": "d"}
+FLAGS_long_short_CPP = {"input": "i", "output": "o"}
+FLAGS_short_keys_PYTHON = ["nireq", "nstreams", "nthreads", "fg"]
 
 
 def correct_demo_flags(set_of_flags, implementation):
@@ -172,13 +155,21 @@ def correct_demo_flags(set_of_flags, implementation):
     for flags in set_of_flags:
         options = {}
         for flag, value in flags.items():
-            if implementation == "python":
-                flag = "--" + flag
+            if flag.startswith(tuple(FLAGS_long_short.keys())):
+                for full, short in FLAGS_long_short.items():
+                    flag = flag.replace(full, short)
+                flag = "-" + flag
             else:
-                if flag.startswith(tuple(FLAGS_CPP.keys())):
-                    for full, short in FLAGS_CPP.items():
-                        flag = flag.replace(full, short)
-                flag = "--" + flag
+                if implementation == "python":
+                    if flag in FLAGS_short_keys_PYTHON:
+                        flag = "-" + flag
+                    else:
+                        flag = "--" + flag
+                else:
+                    if flag.startswith(tuple(FLAGS_long_short_CPP.keys())):
+                        for full, short in FLAGS_long_short_CPP.items():
+                            flag = flag.replace(full, short)
+                    flag = "-" + flag
             options[flag] = value
         new_flags.append(options)
     return new_flags

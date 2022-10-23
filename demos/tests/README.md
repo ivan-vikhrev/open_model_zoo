@@ -4,15 +4,19 @@
 
 Tests cases are represented as `yaml` file.
 
+For any demo, which you want to test, you should specify the next sections:
+ * `name` - name of demo
+ * `parameters` - parameters of demo
+ * `cases` - test cases for this demo
+
 ## Run tests
 
 To start testing you should run the next script `run_tests.py`.
 Running the script with the `-h` option yields the following usage message:
 
 ```
-usage: run_tests.py [-h] --demo-build-dir DIR --test-data-dir DIR --downloader-cache-dir DIR [--demos DEMO[,DEMO...]]
-                    [--scope {base,performance,custom}] [--mo MO.PY] [--devices DEVICES] [--report-file REPORT_FILE] [--log-file LOG_FILE]
-                    [--supported-devices SUPPORTED_DEVICES] [--precisions PRECISIONS [PRECISIONS ...]] [--models-dir DIR]
+usage: run_tests.py [-h] --demo-build-dir DIR --test-data-dir DIR --downloader-cache-dir DIR [--config CONFIG] [--demos DEMO[,DEMO...]] [--scope {base,performance,custom}] [--mo MO.PY] [--devices DEVICES]
+                    [--report-file REPORT_FILE] [--log-file LOG_FILE] [--supported-devices SUPPORTED_DEVICES [SUPPORTED_DEVICES ...]] [--precisions PRECISIONS [PRECISIONS ...]] [--models-dir DIR]
 
 Test script for the demos.
 
@@ -33,9 +37,9 @@ optional arguments:
   --test-data-dir DIR   directory with test data
   --downloader-cache-dir DIR
                         directory to use as the cache for the model downloader
+  --config CONFIG       The config file with test cases
   --demos DEMO[,DEMO...]
-                        list of demos to run tests for (by default, every demo is tested). For testing demos of specific implementation
-                        pass one (or more) of the next values: cpp, cpp_gapi, python.
+                        list of demos to run tests for (by default, every demo is tested). For testing demos of specific implementation pass one (or more) of the next values: cpp, cpp_gapi, python.
   --scope {base,performance,custom}
                         The scenario for testing demos.
   --mo MO.PY            Model Optimizer entry point script
@@ -43,7 +47,7 @@ optional arguments:
   --report-file REPORT_FILE
                         path to report file
   --log-file LOG_FILE   path to log file
-  --supported-devices SUPPORTED_DEVICES
+  --supported-devices SUPPORTED_DEVICES [SUPPORTED_DEVICES ...]
                         paths to Markdown files with supported devices for each model
   --precisions PRECISIONS [PRECISIONS ...]
                         IR precisions for all models. By default, models are tested in FP16, FP16-INT8 precisions

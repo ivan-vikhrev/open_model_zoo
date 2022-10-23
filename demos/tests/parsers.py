@@ -66,7 +66,7 @@ class PerformanceParser(Parser):
         result["Streams"] = test_case.options.get("-nstreams", "-")
         result["Threads"] = test_case.options.get("-nthreads", "-")
 
-        model_keys = [key for key in test_case.options if key.startswith("--m")]
+        model_keys = [key for key in test_case.options if key.startswith(("-m", "--m"))]
 
         if filename.stat().st_size == 0:
             models_col = [f"Model {key}" for key in model_keys]

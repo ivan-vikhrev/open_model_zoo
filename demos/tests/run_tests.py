@@ -56,8 +56,8 @@ from demos import Demo, create_demos_from_yaml
 
 
 def parser_paths_list(supported_devices):
-    paths = supported_devices.split(",")
-    return [Path(p) for p in paths if Path(p).is_file()]
+    if Path(supported_devices).is_file():
+        return Path(supported_devices)
 
 
 def parse_args():
@@ -90,6 +90,7 @@ def parse_args():
     parser.add_argument(
         "--supported-devices",
         type=parser_paths_list,
+        nargs="+",
         required=False,
         help="paths to Markdown files with supported devices for each model",
     )
@@ -366,9 +367,10 @@ def main():
                 def option_to_args(key, value):
                     if value is None or value is True:
                         return [key]
-                    if isinstance(value, list):
-                        return [key, *map(resolve_arg, value)]
-                    return [key, resolve_arg(value)]
+                    result_value = resolve_arg(value)
+                    if isinstance(result_value, list):
+                        return [key, *result_value]
+                    return [key, result_value]
 
                 fixed_args = demo.fixed_args(demos_dir, args.demo_build_dir)
 

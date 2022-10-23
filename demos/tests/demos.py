@@ -38,13 +38,13 @@ class Demo(ClassProvider):
         else:
             self.subdirectory = name
         if device_keys:
-            self.device_keys = ["--" + key for key in device_keys]
+            self.device_keys = ["-" + key for key in device_keys]
         else:
-            self.device_keys = ["--d"]
+            self.device_keys = ["-d"]
         if model_keys:
-            self.model_keys = ["--" + key for key in model_keys]
+            self.model_keys = ["-" + key for key in model_keys]
         else:
-            self.model_keys = ["--m"]
+            self.model_keys = ["-m"]
 
         self.test_cases = test_cases
         if Parser.check_provider(parser_name):
