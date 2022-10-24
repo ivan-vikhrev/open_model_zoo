@@ -57,12 +57,13 @@ class SSDAdapter(Adapter):
         prediction_batch = prediction_batch.reshape(-1, 7)
         prediction_batch = self.remove_empty_detections(prediction_batch)
 
+        frame_meta = frame_meta or [None] * len(identifiers)
         result = []
         for batch_index, identifier in enumerate(identifiers):
             prediction_mask = np.where(prediction_batch[:, 0] == batch_index)
             detections = prediction_batch[prediction_mask]
             detections = detections[:, 1::]
-            result.append(DetectionPrediction(identifier, *zip(*detections)))
+            result.append(DetectionPrediction(identifier, *zip(*detections), metadata=frame_meta[batch_index]))
 
         return result
 

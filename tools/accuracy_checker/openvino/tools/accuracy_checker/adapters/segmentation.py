@@ -59,7 +59,7 @@ class SegmentationAdapter(Adapter):
             segm_out = np.expand_dims(segm_out, 0)
         for identifier, output, meta in zip(identifiers, segm_out, frame_meta):
             output = self.prepare_seg_map(meta, output)
-            result.append(SegmentationPrediction(identifier, output))
+            result.append(SegmentationPrediction(identifier, output, meta))
 
         return result
 
