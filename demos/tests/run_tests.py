@@ -48,12 +48,6 @@ from utils import read_yaml
 
 from demos import Demo, create_demos_from_yaml
 
-# scopes = {
-#     'base': importlib.import_module('cases').DEMOS,
-#     'performance': importlib.import_module('performance_cases').DEMOS,
-#     'custom': importlib.import_module('custom_cases').DEMOS
-# }
-
 
 def parser_paths_list(supported_devices):
     if Path(supported_devices).is_file():
@@ -81,12 +75,13 @@ def parse_args():
         "For testing demos of specific implementation pass one (or more) of the next values: cpp, cpp_gapi, python.",
     )
     parser.add_argument(
-        "--scope", default="base", help="The scenario for testing demos.", choices=("base", "performance", "custom")
+        "--scope", default="all", help="Testing demos according to parser name", choices=("all", "basic", "perf")
     )
     parser.add_argument("--mo", type=Path, metavar="MO.PY", help="Model Optimizer entry point script")
     parser.add_argument("--devices", default="CPU GPU", help="list of devices to test")
     parser.add_argument("--report-file", type=Path, help="path to report file")
     parser.add_argument("--log-file", type=Path, help="path to log file")
+    parser.add_argument("--parser-path", default="results", type=Path, help="path to directory to write parser results")
     parser.add_argument(
         "--supported-devices",
         type=parser_paths_list,
@@ -236,7 +231,7 @@ def get_models(case, keys):
     return models
 
 
-def get_demos_to_test(demos_from_config, demos_from_args):
+def get_demos_to_test(demos_from_config, demos_from_args, parser_key):
     if demos_from_args is not None:
         names_of_demos_to_test = set(demos_from_args.split(","))
         if all(impl in Demo.providers for impl in names_of_demos_to_test):
@@ -247,6 +242,9 @@ def get_demos_to_test(demos_from_config, demos_from_args):
         demos_to_test = [demo for demo in demos_from_config if demo.subdirectory in names_of_demos_to_test]
     else:
         demos_to_test = demos_from_config
+
+    if parser_key != "all":
+        demos_to_test = [demo for demo in demos_to_test if demo.parser_name == parser_key]
 
     if len(demos_to_test) == 0:
         if demos_from_args:
@@ -263,11 +261,11 @@ def get_demos_to_test(demos_from_config, demos_from_args):
     return demos_to_test
 
 
-def get_parsers_from_demos(demos) -> dict:
+def get_parsers_from_demos(demos, parser_path) -> dict:
     parsers = {}
     for demo in demos:
         if demo.parser_name not in parsers:
-            parsers[demo.parser_name] = Parser.provide(demo.parser_name)
+            parsers[demo.parser_name] = Parser.provide(demo.parser_name, parser_path)
 
     return parsers
 
@@ -297,10 +295,10 @@ def main():
         for model in models_list:
             model_info[model["name"]] = model
 
-    demos_to_test = get_demos_to_test(DEMOS, args.demos)
+    demos_to_test = get_demos_to_test(DEMOS, args.demos, args.scope)
 
     # Create needed parsers
-    parsers = get_parsers_from_demos(demos_to_test)
+    parsers = get_parsers_from_demos(demos_to_test, args.parser_path)
 
     with temp_dir_as_path() as global_temp_dir:
         if args.models_dir:
@@ -351,6 +349,7 @@ def main():
                     declared_model_names.add(model["name"])
 
             with temp_dir_as_path() as temp_dir:
+                # create context for resolving demo arguments
                 arg_context = ArgContext(
                     dl_dir=dl_dir,
                     data_sequence_dir=temp_dir / "data_seq",

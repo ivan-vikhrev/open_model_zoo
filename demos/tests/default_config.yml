@@ -1,4 +1,4 @@
-# config for testing all of demos (# of demos = 60, cpp_gapi = 6/6, cpp = 17/18, python = 36(24/36))
+# config for testing all of demos (# of demos = 60, cpp_gapi = 6, cpp = 18, python = 36)
 demos:
   # CPP_GAPI Demos
   - name: background_subtraction_demo
@@ -447,46 +447,46 @@ demos:
         - !Model person-reidentification-retail-0277
         - !Model person-reidentification-retail-0287
 
-  # # consider extra models parameter
-  # - name: text_detection_demo
-  #   parameters:
-  #     implementation: cpp
-  #     device_keys: [d_td, d_tr]
-  #     model_keys: [m_td, m_tr]
-  #   cases:
-  #     no_show: true
-  #     input: text-detection
-  #     model_td:
-  #       - text-detection-0003
-  #       - text-detection-0004
-  #       - horizontal-text-detection-0001
-  #     split:
-  #       - dt: ctc
-  #         split:
-  #           - model_tr: None
-  #           - model_tr: text-recognition-0012
-  #           - model_tr: text-recognition-0014
-  #             tr_pt_first: true
-  #             tr_o_blb_nm: logits
-  #       - dt: simple
-  #         split:
-  #           - model_tr: text-recognition-resnet-fc
-  #             tr_pt_first: true
-  #           - model_tr: vitstr-small-patch16-224
-  #             tr_pt_first: true
-  #             m_tr_ss: models/public/vitstr-small-patch16-224/vocab.txt
-  #             start_index: 1
-  #             pad: " "
-  #           - model_tr: text-recognition-0015-encoder
-  #             tr_pt_first: true
-  #             tr_o_blb_nm: logits
-  #             m_tr_ss: "?0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  #             extra_models: text-recognition-0015-decoder
-  #           - model_tr: text-recognition-0016-encoder
-  #             tr_pt_first: true
-  #             tr_o_blb_nm: logits
-  #             m_tr_ss: "?0123456789abcdefghijklmnopqrstuvwxyz"
-  #             extra_models: text-recognition-0016-decoder
+  # consider extra models parameter
+  - name: text_detection_demo
+    parameters:
+      implementation: cpp
+      device_keys: [d_td, d_tr]
+      model_keys: [m_td, m_tr]
+    cases:
+      no_show: true
+      input: !DataPattern text-detection
+      model_td:
+        - !Model text-detection-0003
+        - !Model text-detection-0004
+        - !Model horizontal-text-detection-0001
+      split:
+        - dt: ctc
+          split:
+            - null
+            - model_tr: !Model text-recognition-0012
+            - model_tr: !Model text-recognition-0014
+              tr_pt_first: true
+              tr_o_blb_nm: logits
+        - dt: simple
+          split:
+            - model_tr: !Model text-recognition-resnet-fc
+              tr_pt_first: true
+            - model_tr: !Model vitstr-small-patch16-224
+              tr_pt_first: true
+              m_tr_ss: !OmzData models/public/vitstr-small-patch16-224/vocab.txt
+              start_index: 1
+              pad: " "
+            - model_tr: !Model text-recognition-0015-encoder
+              tr_pt_first: true
+              tr_o_blb_nm: logits
+              m_tr_ss: "?0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+              extra_models: !Vector [!Model text-recognition-0015-decoder]
+            - model_tr: !Model text-recognition-0016-encoder
+              tr_pt_first: true
+              tr_o_blb_nm: logits
+              m_tr_ss: "?0123456789abcdefghijklmnopqrstuvwxyz"
+              extra_models: !Vector [!Model text-recognition-0016-decoder]
 
   # PYTHON Demos
   - name: 3d_segmentation_demo
@@ -768,6 +768,15 @@ demos:
             - !Model human-pose-estimation-0006
             - !Model human-pose-estimation-0007
 
+  - name: image_inpainting_demo
+    parameters:
+      implementation: python
+    cases:
+      no_show: true
+      input: !image_net_arg 00048311
+      model: !Model gmcnn-places2-tf
+      auto_mask_random: true
+
   - name: image_retrieval_demo
     parameters:
       implementation: python
@@ -991,3 +1000,164 @@ demos:
                 file_name: nanodet-plus-m-1.5x-416.onnx
               mean_values: ["103.53", "116.28", "123.675"]
               scale_values: ["57.375", "57.12", "58.395"]
+
+  - name: segmentation_demo
+    parameters:
+      implementation: python
+    cases:
+      no_show: true
+      split:
+        - input: !DataPattern road-segmentation-adas
+          architecture_type: segmentation
+          model: !Model road-segmentation-adas-0001
+        - input: !DataPattern semantic-segmentation-adas
+          architecture_type: segmentation
+          model:
+            - !Model semantic-segmentation-adas-0001
+            - !Model fastseg-large
+            - !Model fastseg-small
+            - !Model hrnet-v2-c1-segmentation
+            - !Model icnet-camvid-ava-0001
+            - !Model icnet-camvid-ava-sparse-30-0001
+            - !Model icnet-camvid-ava-sparse-60-0001
+            - !Model unet-camvid-onnx-0001
+            - !Model deeplabv3
+            - !Model ocrnet-hrnet-w48-paddle
+            - !Model pspnet-pytorch
+            - !Model drn-d-38
+        - input: !DataPattern road-segmentation-adas
+          architecture_type: salient_object_detection
+          model: !Model f3net
+
+  - name: single_human_pose_estimation_demo
+    parameters:
+      implementation: python
+      model_keys: [m_od, m_hpe]
+    cases:
+      no_show: true
+      input: !DataPattern human-pose-estimation
+      person_label: 1
+      model_hpe: !Model single-human-pose-estimation-0001
+      model_od:
+        - !Model mobilenet-ssd
+        - !Model person-detection-retail-0013
+        - !Model ssd_mobilenet_v1_coco
+
+  - name: smartlab_demo
+    parameters:
+      implementation: python
+      model_keys: [m_ta, m_tm, m_fa, m_fm, m_en, m_de]
+    cases:
+      model_ta: !Model smartlab-object-detection-0001
+      model_tm: !Model smartlab-object-detection-0002
+      model_fa: !Model smartlab-object-detection-0003
+      model_fm: !Model smartlab-object-detection-0004
+      model_en: !Model i3d-rgb-tf
+      model_de: !Model smartlab-sequence-modelling-0001
+      topview: !TestData data/test_data/videos/smartlab/stream_8_top.mp4
+      sideview: !TestData data/test_data/videos/smartlab/stream_8_front.mp4
+
+  - name: sound_classification_demo
+    parameters:
+      implementation: python
+    cases:
+      input: !TestData how_are_you.wav
+      model: !Model aclnet
+
+  - name: speech_recognition_deepspeech_demo
+    parameters:
+      implementation: python
+    cases:
+      input: !TestData how_are_you.wav
+      split:
+        - model: !Model mozilla-deepspeech-0.8.2
+          profile: mds08x_en
+          lm: !ModelFile
+            name: mozilla-deepspeech-0.8.2
+            file_name: deepspeech-0.8.2-models.kenlm
+        - model: !Model mozilla-deepspeech-0.6.1
+          profile: mds06x_en
+          lm: !ModelFile
+            name: mozilla-deepspeech-0.6.1
+            file_name: deepspeech-0.6.1-models/lm.binary
+        - model: !Model mozilla-deepspeech-0.8.2
+          profile: mds08x_en
+          lm: !ModelFile
+            name: mozilla-deepspeech-0.8.2
+            file_name: deepspeech-0.8.2-models.kenlm
+          realtime: true
+        - model: !Model mozilla-deepspeech-0.8.2
+          profile: mds08x_en
+
+  - name: speech_recognition_quartznet_demo
+    parameters:
+      implementation: python
+    cases:
+      input: !TestData how_are_you.wav
+      model:
+        - !Model quartznet-15x5-en
+        - !ModelFile
+          name: quartznet-15x5-en
+          file_name: quartznet.onnx
+
+  - name: speech_recognition_wav2vec_demo
+    parameters:
+      implementation: python
+      parser_name: perf
+    cases:
+      input: !TestData how_are_you.wav
+      model: !Model wav2vec2-base
+
+  - name: text_spotting_demo
+    parameters:
+      implementation: python
+      model_keys: [m_m, m_te, m_td]
+    cases:
+      no_show: true
+      input: !DataPattern text-detection
+      model_m: !Model text-spotting-0005-detector
+      model_te: !Model text-spotting-0005-recognizer-encoder
+      model_td: !Model text-spotting-0005-recognizer-decoder
+      delay: 1
+      no_track: true
+
+  - name: text_to_speech_demo
+    parameters:
+      implementation: python
+      model_keys: [m_duration, m_forward, m_upsample, m_rnn, m_melgan]
+    cases:
+      input: !Vector ["The quick brown fox jumps over the lazy dog.", "The five boxing wizards jump quickly."]
+      split:
+        - model_duration: !Model forward-tacotron-duration-prediction
+          model_forward: !Model forward-tacotron-regression
+          model_upsample: !Model wavernn-upsampler
+          model_rnn: !Model wavernn-rnn
+        - model_duration: !Model text-to-speech-en-0001-duration-prediction
+          model_forward: !Model text-to-speech-en-0001-regression
+          model_melgan: !Model text-to-speech-en-0001-generation
+        - model_duration: !Model text-to-speech-en-multi-0001-duration-prediction
+          model_forward: !Model text-to-speech-en-multi-0001-regression
+          model_melgan: !Model text-to-speech-en-multi-0001-generation
+
+  - name: time_series_forecasting_demo
+    parameters:
+      implementation: python
+      device_keys: []
+    cases:
+      help: ""
+
+  - name: whiteboard_inpainting_demo
+    parameters:
+      implementation: python
+      model_keys: [m_i, m_s]
+    cases:
+      no_show: true
+      input: !TestData msasl/global_crops/_nz_sivss20/clip_0017/img_%05d.jpg
+      split:
+        - model_i:
+            - !Model instance-segmentation-security-0002
+            - !Model instance-segmentation-security-0228
+            - !Model instance-segmentation-security-1039
+            - !Model instance-segmentation-security-1040
+        - model_s:
+            - !Model semantic-segmentation-adas-0001

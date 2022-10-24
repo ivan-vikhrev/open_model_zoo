@@ -20,13 +20,7 @@ import sys
 
 from args import ModelArg
 from parsers import Parser
-from utils import (
-    ClassProvider,
-    TestCase,
-    combine_cases,
-    correct_demo_flags,
-    get_test_options_from_config,
-)
+from utils import ClassProvider, combine_cases, create_test_cases
 
 
 class Demo(ClassProvider):
@@ -175,9 +169,7 @@ def create_demos_from_yaml(config):
         name = demo_info["name"]
         parameters = demo_info["parameters"]
         implementation = parameters["implementation"]
-        test_options = get_test_options_from_config(demo_info["cases"])
-        test_options = correct_demo_flags(test_options, implementation)
-        test_cases = [TestCase(options=demo_flags) for demo_flags in test_options]
+        test_cases = create_test_cases(demo_info["cases"], implementation)
         parameters.pop("implementation")
         parameters["test_cases"] = test_cases
         demo_classes.append(Demo.provide(implementation, name, **parameters))

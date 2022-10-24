@@ -4,11 +4,52 @@
 
 Tests cases are represented as `yaml` file.
 
-For any demo, which you want to test, you should specify the next sections:
+For any demo, which user want to test, he should specify the next sections:
  * `name` - name of demo
  * `parameters` - parameters of demo
  * `cases` - test cases for this demo
 
+Let's consider each section separately:
+1. `name` section. User can test any demo applications from OMZ `demos` directory. To get more information about demos please see [DEMOS](..).
+2. `parameters` section. For this section user shoud type the next parameters:
+   * `implementation` - possible values are `cpp` and `python`. Parameter is required.
+   * `model_keys` - model keys from demo options. Optional parameter, `-m` flag for single model demos is used by default.
+   * `device_keys` - device keys from demo options. Optional parameter, `-d` flag is used as default.
+   * `parser_name` - parser for output of tested demos. Optional parameter, `basic` parser is used by default. All possible parsers:
+     * `basic` - this parser does nothing. In this case, we check correct of demo working and don't consider what demo return.
+     * `perf` - this parser examine demo output for performance metrics, such as `FPS`, etc. In this case, after running demo tests, parser create `.csv` file with table of performance.
+3. `cases` section. In this section user spicifies demo options for test cases. There are some rules for creating demo test cases:
+   * Options located in *one-level* indentation will be combine with each other.
+   * User can define list of different values for single key-option. It means that demo test cases will be created according to this list.
+   * If user want to separate difficult (many-options) cases and test them independently, he should use key-word `split` for these cases.
+   * For python demos user should use *long* keys for options.
+
+   Example:
+   ```
+   - name: human_pose_estimation_demo
+     parameters:
+       implementation: cpp
+     cases:
+       no_show: true
+       input: !DataPattern human-pose-estimation
+       split:
+         - architecture_type: openpose
+           model: !Model human-pose-estimation-0001
+         - architecture_type: higherhrnet
+           model: !Model higher-hrnet-w32-human-pose-estimation
+         - architecture_type: ae
+           model:
+             - !Model human-pose-estimation-0005
+             - !Model human-pose-estimation-0006
+   ```
+
+   Based on config above, the next `4` test cases will be created:
+   ```
+   TestCase(options={'-at': 'openpose', '-m': <args.ModelArg object at 0x7f6a70590580>, '-no_show': True, '-i': <args.DataPatternArg object at 0x7f6a70584580>}, extra_models=[])
+   TestCase(options={'-at': 'higherhrnet', '-m': <args.ModelArg object at 0x7f6a705905e0>, '-no_show': True, '-i': <args.DataPatternArg object at 0x7f6a70584580>}, extra_models=[])
+   TestCase(options={'-m': <args.ModelArg object at 0x7f6a70518910>, '-at': 'ae', '-no_show': True, '-i': <args.DataPatternArg object at 0x7f6a70584580>}, extra_models=[])
+   TestCase(options={'-m': <args.ModelArg object at 0x7f6a70518970>, '-at': 'ae', '-no_show': True, '-i': <args.DataPatternArg object at 0x7f6a70584580>}, extra_models=[])
+   ```
 ## Run tests
 
 To start testing you should run the next script `run_tests.py`.
@@ -17,7 +58,7 @@ Running the script with the `-h` option yields the following usage message:
 ```
 usage: run_tests.py [-h] --demo-build-dir DIR --test-data-dir DIR --downloader-cache-dir DIR [--config CONFIG] [--demos DEMO[,DEMO...]] [--scope {base,performance,custom}] [--mo MO.PY] [--devices DEVICES]
                     [--report-file REPORT_FILE] [--log-file LOG_FILE] [--supported-devices SUPPORTED_DEVICES [SUPPORTED_DEVICES ...]] [--precisions PRECISIONS [PRECISIONS ...]] [--models-dir DIR]
-
+let's consider each section separately
 Test script for the demos.
 
 For the tests to work, the test data directory must contain:

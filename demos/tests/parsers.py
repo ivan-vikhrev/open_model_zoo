@@ -21,6 +21,9 @@ from utils import ClassProvider
 class Parser(ClassProvider):
     __provider_type__ = "parser"
 
+    def __init__(self, path_to_results=None):
+        pass
+
     def __call__(self, subdirectory, demo_results):
         raise NotImplementedError
 

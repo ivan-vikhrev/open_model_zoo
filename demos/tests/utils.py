@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import List, Union
 
 import yaml
+from args import AbstractArg
 
 # Constructions for registering classes (one of the variants of factories)
 
@@ -143,6 +144,22 @@ def get_test_options_from_config(options: dict) -> List[dict]:
     return result_options
 
 
+def create_test_cases(config: dict, implementation) -> List[TestCase]:
+    test_options = get_test_options_from_config(config)
+    test_cases = []
+
+    for demo_flags in test_options:
+        extra_models = demo_flags.get("extra_models", [])
+        if isinstance(extra_models, AbstractArg):
+            extra_models = extra_models.vector
+        demo_flags.pop("extra_models", [])
+        case_options = correct_demo_flags(demo_flags, implementation)
+        test_case = TestCase(options=case_options, extra_models=extra_models)
+        test_cases.append(test_case)
+
+    return test_cases
+
+
 # Correction demo options according to demo flags
 
 FLAGS_long_short = {"model": "m", "architecture_type": "at", "device": "d"}
@@ -150,26 +167,23 @@ FLAGS_long_short_CPP = {"input": "i", "output": "o"}
 FLAGS_short_keys_PYTHON = ["nireq", "nstreams", "nthreads", "fg"]
 
 
-def correct_demo_flags(set_of_flags, implementation):
-    new_flags = []
-    for flags in set_of_flags:
-        options = {}
-        for flag, value in flags.items():
-            if flag.startswith(tuple(FLAGS_long_short.keys())):
-                for full, short in FLAGS_long_short.items():
-                    flag = flag.replace(full, short)
-                flag = "-" + flag
-            else:
-                if implementation == "python":
-                    if flag in FLAGS_short_keys_PYTHON:
-                        flag = "-" + flag
-                    else:
-                        flag = "--" + flag
-                else:
-                    if flag.startswith(tuple(FLAGS_long_short_CPP.keys())):
-                        for full, short in FLAGS_long_short_CPP.items():
-                            flag = flag.replace(full, short)
+def correct_demo_flags(flags: dict, implementation: str):
+    options = {}
+    for flag, value in flags.items():
+        if flag.startswith(tuple(FLAGS_long_short.keys())):
+            for full, short in FLAGS_long_short.items():
+                flag = flag.replace(full, short)
+            flag = "-" + flag
+        else:
+            if implementation == "python":
+                if flag in FLAGS_short_keys_PYTHON:
                     flag = "-" + flag
-            options[flag] = value
-        new_flags.append(options)
-    return new_flags
+                else:
+                    flag = "--" + flag
+            else:
+                if flag.startswith(tuple(FLAGS_long_short_CPP.keys())):
+                    for full, short in FLAGS_long_short_CPP.items():
+                        flag = flag.replace(full, short)
+                flag = "-" + flag
+        options[flag] = value
+    return options
