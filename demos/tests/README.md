@@ -50,6 +50,35 @@ Let's consider each section separately:
    TestCase(options={'-m': <args.ModelArg object at 0x7f6a70518910>, '-at': 'ae', '-no_show': True, '-i': <args.DataPatternArg object at 0x7f6a70584580>}, extra_models=[])
    TestCase(options={'-m': <args.ModelArg object at 0x7f6a70518970>, '-at': 'ae', '-no_show': True, '-i': <args.DataPatternArg object at 0x7f6a70584580>}, extra_models=[])
    ```
+
+   What about custom types for `input` and `model` options, there are next alternatives:
+
+   For `input` flag:
+   * `string` type - scpecify path to image or folder of images directly.
+   * `!TestData` tag - specify a relative path to input data, based on `test-data-dir` flag for `run_tests.py`.
+   * `!OmzData` tag - specify a relative path to input data, based on `OMZ_DIR`.
+   * `!image_net_arg` tag - specify a relative path to images from imagenet dataset. User must use image `id`, as input for this tag.
+   * `!image_retrieval_arg` tag - specify a relative path to images from image retrieval dataset. User must use image `id`, as input for this tag.
+   * `!brats_arg` tag - specify a relative path to images from BraTS dataset. User must use image `id`, as input for this tag.
+   * `!DataPattern` tag - specify one of data sequence names from [data sequences](data_sequences.py). Use image patterns as input for demo.
+   * `!DataDirectory` tag - specify one of data sequence names from [data sequences](data_sequences.py). Use folder with images, that have pattern name format, as input for demo.
+   * `!DataDirectoryOrigFileNames` tag - specify one of data sequence names from [data sequences](data_sequences.py). Use folder with images, that have original names, as input for demo.
+   * `!DataListOfFiles` tag - specify one of data sequence names from [data sequences](data_sequences.py). Use list of names of images, as input for demo.
+   * `!Vector` tag - specify list of any types above.
+
+   For `model` flag:
+   * `!Model` tag - specify name of IR model. Also user can omit this tag and specify name directly.
+   * `!ModelFile` tag - scpicify dict, where should be next (key: value) pairs:
+     * `name`: name of IR model.
+     * `file_name`: name of file from folder of model.
+
+     This type is useful for models of other frameworks obtained during conversion
+   * `null` type - user should specify this type if he doesn't want to use some model in current case.
+
+   For other flags: default yaml types + all types above if needed.
+
+   To get more information about types, please see [types](args.py).
+   There is [`default_config`](default_config.yml) to test all demos. Please look to it, if you want to create custom yaml config.
 ## Run tests
 
 To start testing you should run the next script `run_tests.py`.
