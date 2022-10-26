@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+"""
+All possible custom types for options of demos
+"""
+
 import collections
 import shutil
 from pathlib import Path
@@ -28,6 +33,7 @@ OMZ_DIR = Path(__file__).parents[2].resolve()
 
 
 class AbstractArg(yaml.YAMLObject):
+    __provider_type__ = "AbstractArg"
     yaml_loader = yaml.SafeLoader
 
     def resolve(self, context):
@@ -42,6 +48,7 @@ class AbstractArg(yaml.YAMLObject):
 
 
 class TestDataArg(AbstractArg):
+    __provider__ = "TestData"
     yaml_tag = "!TestData"
 
     def __init__(self, rel_path):
@@ -52,6 +59,7 @@ class TestDataArg(AbstractArg):
 
 
 class OmzDataArg(AbstractArg):
+    __provider__ = "OmzData"
     yaml_tag = "!OmzData"
 
     def __init__(self, rel_path):
@@ -63,6 +71,7 @@ class OmzDataArg(AbstractArg):
 
 
 class image_net_arg(TestDataArg):
+    __provider__ = "image_net_arg"
     yaml_tag = "!image_net_arg"
 
     def __init__(self, image_id):
@@ -70,6 +79,7 @@ class image_net_arg(TestDataArg):
 
 
 class brats_arg(TestDataArg):
+    __provider__ = "brats_arg"
     yaml_tag = "!brats_arg"
 
     def __init__(self, image_id):
@@ -77,6 +87,7 @@ class brats_arg(TestDataArg):
 
 
 class image_retrieval_arg(TestDataArg):
+    __provider__ = "image_retrieval_arg"
     yaml_tag = "!image_retrieval_arg"
 
     def __init__(self, image_id):
@@ -84,6 +95,7 @@ class image_retrieval_arg(TestDataArg):
 
 
 class DataPatternArg(AbstractArg):
+    __provider__ = "DataPattern"
     yaml_tag = "!DataPattern"
 
     def __init__(self, sequence_name):
@@ -108,6 +120,7 @@ class DataPatternArg(AbstractArg):
 
 
 class DataDirectoryArg(AbstractArg):
+    __provider__ = "DataDirectory"
     yaml_tag = "!DataDirectory"
 
     def __init__(self, sequence_name):
@@ -119,6 +132,7 @@ class DataDirectoryArg(AbstractArg):
 
 
 class DataDirectoryOrigFileNamesArg(AbstractArg):
+    __provider__ = "DataDirectoryOrigFileNames"
     yaml_tag = "!DataDirectoryOrigFileNames"
 
     def __init__(self, sequence_name):
@@ -138,6 +152,7 @@ class DataDirectoryOrigFileNamesArg(AbstractArg):
 
 
 class DataListOfFilesArg(AbstractArg):
+    __provider__ = "DataListOfFiles"
     yaml_tag = "!DataListOfFiles"
 
     def __init__(self, sequence_name):
@@ -158,12 +173,15 @@ class DataListOfFilesArg(AbstractArg):
 
 
 class AbstractModelArg(AbstractArg):
+    __provider_type__ = "AbstractModelArg"
+
     @property
     def required_models(self):
         return []
 
 
 class ModelArg(AbstractModelArg):
+    __provider__ = "Model"
     yaml_tag = "!Model"
 
     def __init__(self, name, precision=None):
@@ -181,6 +199,7 @@ class ModelArg(AbstractModelArg):
 
 
 class ModelFileArg(AbstractModelArg):
+    __provider__ = "ModelFile"
     yaml_tag = "!ModelFile"
 
     def __init__(self, name, file_name):
@@ -203,8 +222,8 @@ class ModelFileArg(AbstractModelArg):
 
 
 class VectorArg(AbstractArg):
+    __provider__ = "Vector"
     yaml_tag = "!Vector"
-    yaml_loader = yaml.SafeLoader
 
     def __init__(self, vector: list) -> None:
         self.vector = vector

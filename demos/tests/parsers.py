@@ -12,10 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+"""
+Parsers for output od demo processing
+"""
+
 import re
 from pathlib import Path
 
-from utils import ClassProvider
+from providers import ClassProvider
 
 
 class Parser(ClassProvider):

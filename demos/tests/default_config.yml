@@ -3,14 +3,14 @@ demos:
   # CPP_GAPI Demos
   - name: background_subtraction_demo
     parameters:
-      implementation: cpp_gapi
+      implementation: cpp
     cases:
       input: !DataPattern instance-segmentation
       no_show: true
       architecture_type: maskrcnn
       model:
-        - !Model instance-segmentation-person-0007
-        - !Model instance-segmentation-security-0091
+        - instance-segmentation-person-0007
+        - instance-segmentation-security-0091
 
   - name: gaze_estimation_demo
     parameters:
@@ -20,13 +20,13 @@ demos:
     cases:
       no_show: true
       input: !DataPattern gaze-estimation-adas
-      model: !Model gaze-estimation-adas-0002
-      model_hp: !Model head-pose-estimation-adas-0001
-      model_es: !Model open-closed-eye-0001
-      model_lm: !Model facial-landmarks-35-adas-0002
+      model: gaze-estimation-adas-0002
+      model_hp: head-pose-estimation-adas-0001
+      model_es: open-closed-eye-0001
+      model_lm: facial-landmarks-35-adas-0002
       model_fd:
-        - !Model face-detection-adas-0001
-        - !Model face-detection-retail-0004
+        - face-detection-adas-0001
+        - face-detection-retail-0004
 
   - name: gesture_recognition_demo
     parameters:
@@ -36,13 +36,13 @@ demos:
     cases:
       no_show: true
       input: !TestData msasl/global_crops/_nz_sivss20/clip_0017/img_%05d.jpg
-      model_d: !Model person-detection-asl-0001
+      model_d: person-detection-asl-0001
       split:
-        - model_a: !Model asl-recognition-0004
+        - model_a: asl-recognition-0004
           c: !OmzData data/dataset_classes/msasl100.json
-        - model_a: !Model common-sign-language-0001
+        - model_a: common-sign-language-0001
           c: !OmzData data/dataset_classes/jester27.json
-        - model_a: !Model common-sign-language-0002
+        - model_a: common-sign-language-0002
           c: !OmzData data/dataset_classes/common_sign_language12.json
 
   - name: face_detection_mtcnn_demo
@@ -53,9 +53,9 @@ demos:
     cases:
       no_show: true
       input: !TestData ILSVRC2012_img_val/ILSVRC2012_val_00000002.JPEG
-      model_p: !Model mtcnn-p
-      model_r: !Model mtcnn-r
-      model_o: !Model mtcnn-o
+      model_p: mtcnn-p
+      model_r: mtcnn-r
+      model_o: mtcnn-o
 
   - name: smart_classroom_demo
     parameters:
@@ -65,23 +65,22 @@ demos:
     cases:
       no_show: true
       input: !DataPattern smart-classroom-demo
-      model_fd: !Model face-detection-adas-0001
+      model_fd: face-detection-adas-0001
       split:
-        - model_act:
-            - !Model person-detection-raisinghand-recognition-0001
+        - model_act: person-detection-raisinghand-recognition-0001
           a_top: 5
         - split:
-            - model_act: !Model person-detection-action-recognition-0005
-            - model_act: !Model person-detection-action-recognition-0006
+            - model_act: person-detection-action-recognition-0005
+            - model_act: person-detection-action-recognition-0006
               student_ac: sitting,writing,raising_hand,standing,turned_around,lie_on_the_desk
-            - model_act: !Model person-detection-action-recognition-teacher-0002
+            - model_act: person-detection-action-recognition-teacher-0002
           split_1:
             - null
             - model_lm:
-                - !Model landmarks-regression-retail-0009
+                - landmarks-regression-retail-0009
               model_reid:
-                - !Model Sphereface
-                - !Model face-recognition-resnet100-arcface-onnx
+                - Sphereface
+                - face-recognition-resnet100-arcface-onnx
 
   - name: interactive_face_detection_demo
     parameters:
@@ -92,13 +91,13 @@ demos:
       noshow: true
       input: !DataPattern 375x500
       split:
-        - model: !Model face-detection-adas-0001
-        - model: !Model face-detection-retail-0004
-          model_ag: !Model age-gender-recognition-retail-0013
-          model_am: !Model anti-spoof-mn3
-          model_em: !Model emotions-recognition-retail-0003
-          model_hp: !Model head-pose-estimation-adas-0001
-          model_lm: !Model facial-landmarks-35-adas-0002
+        - model: face-detection-adas-0001
+        - model: face-detection-retail-0004
+          model_ag: age-gender-recognition-retail-0013
+          model_am: anti-spoof-mn3
+          model_em: emotions-recognition-retail-0003
+          model_hp: head-pose-estimation-adas-0001
+          model_lm: facial-landmarks-35-adas-0002
 
   # CPP Demos
   - name: classification_benchmark_demo
@@ -111,18 +110,18 @@ demos:
       input: !DataDirectoryOrigFileNames classification
       labels: !OmzData data/dataset_classes/imagenet_2012.txt
       model:
-        - !Model alexnet
-        - !Model googlenet-v3-pytorch
-        - !Model mobilenet-v2
-        - !Model mobilenet-v2-pytorch
-        - !Model densenet-121-tf
-        - !Model googlenet-v1
-        - !Model googlenet-v1-tf
-        - !Model googlenet-v3
-        - !Model mixnet-l
-        - !Model repvgg-a0
-        - !Model repvgg-b1
-        - !Model repvgg-b3
+        - alexnet
+        - googlenet-v3-pytorch
+        - mobilenet-v2
+        - mobilenet-v2-pytorch
+        - densenet-121-tf
+        - googlenet-v1
+        - googlenet-v1-tf
+        - googlenet-v3
+        - mixnet-l
+        - repvgg-a0
+        - repvgg-b1
+        - repvgg-b3
 
   - name: crossroad_camera_demo
     parameters:
@@ -132,16 +131,16 @@ demos:
     cases:
       no_show: true
       input: !DataPattern person-vehicle-bike-detection-crossroad
-      model: !Model person-vehicle-bike-detection-crossroad-0078
+      model: person-vehicle-bike-detection-crossroad-0078
       model_pa:
         - null
-        - !Model person-attributes-recognition-crossroad-0230
+        - person-attributes-recognition-crossroad-0230
       model_reid:
         - null
-        - !Model person-reidentification-retail-0277
-        - !Model person-reidentification-retail-0286
-        - !Model person-reidentification-retail-0287
-        - !Model person-reidentification-retail-0288
+        - person-reidentification-retail-0277
+        - person-reidentification-retail-0286
+        - person-reidentification-retail-0287
+        - person-reidentification-retail-0288
 
   - name: gaze_estimation_demo
     parameters:
@@ -151,15 +150,15 @@ demos:
     cases:
       no_show: true
       input: !DataPattern gaze-estimation-adas
-      model: !Model gaze-estimation-adas-0002
-      model_hp: !Model head-pose-estimation-adas-0001
-      model_es: !Model open-closed-eye-0001
+      model: gaze-estimation-adas-0002
+      model_hp: head-pose-estimation-adas-0001
+      model_es: open-closed-eye-0001
       model_lm:
-        - !Model facial-landmarks-35-adas-0002
-        - !Model facial-landmarks-98-detection-0001
+        - facial-landmarks-35-adas-0002
+        - facial-landmarks-98-detection-0001
       model_fd:
-        - !Model face-detection-adas-0001
-        - !Model face-detection-retail-0004
+        - face-detection-adas-0001
+        - face-detection-retail-0004
 
   # Example with several architecture types
   - name: human_pose_estimation_demo
@@ -170,14 +169,14 @@ demos:
       input: !DataPattern human-pose-estimation
       split:
         - architecture_type: openpose
-          model: !Model human-pose-estimation-0001
+          model: human-pose-estimation-0001
         - architecture_type: higherhrnet
-          model: !Model higher-hrnet-w32-human-pose-estimation
+          model: higher-hrnet-w32-human-pose-estimation
         - architecture_type: ae
           model:
-            - !Model human-pose-estimation-0005
-            - !Model human-pose-estimation-0006
-            - !Model human-pose-estimation-0007
+            - human-pose-estimation-0005
+            - human-pose-estimation-0006
+            - human-pose-estimation-0007
 
   - name: image_processing_demo
     parameters:
@@ -188,13 +187,13 @@ demos:
       split:
         - architecture_type: sr
           model:
-            - !Model single-image-super-resolution-1032
-            - !Model single-image-super-resolution-1033
-            - !Model text-image-super-resolution-0001
+            - single-image-super-resolution-1032
+            - single-image-super-resolution-1033
+            - text-image-super-resolution-0001
         - architecture_type: deblur
-          model: !Model deblurgan-v2
+          model: deblurgan-v2
         - architecture_type: jr
-          model: !Model fbcnn
+          model: fbcnn
 
   - name: interactive_face_detection_demo
     parameters:
@@ -204,13 +203,13 @@ demos:
       noshow: true
       input: !DataPattern 375x500
       split:
-        - model: !Model face-detection-adas-0001
-        - model: !Model face-detection-retail-0004
-          model_ag: !Model age-gender-recognition-retail-0013
-          model_am: !Model anti-spoof-mn3
-          model_em: !Model emotions-recognition-retail-0003
-          model_hp: !Model head-pose-estimation-adas-0001
-          model_lm: !Model facial-landmarks-35-adas-0002
+        - model: face-detection-adas-0001
+        - model: face-detection-retail-0004
+          model_ag: age-gender-recognition-retail-0013
+          model_am: anti-spoof-mn3
+          model_em: emotions-recognition-retail-0003
+          model_hp: head-pose-estimation-adas-0001
+          model_lm: facial-landmarks-35-adas-0002
 
   - name: mask_rcnn_demo
     parameters:
@@ -218,8 +217,8 @@ demos:
     cases:
       input: !DataDirectory instance-segmentaion-mask-rcnn
       model:
-        - !Model mask_rcnn_inception_resnet_v2_atrous_coco
-        - !Model mask_rcnn_resnet50_atrous_coco
+        - mask_rcnn_inception_resnet_v2_atrous_coco
+        - mask_rcnn_resnet50_atrous_coco
 
   - name: multi_channel_face_detection_demo
     parameters:
@@ -228,16 +227,16 @@ demos:
       no_show: true
       input: !DataDirectory face-detection-adas
       split:
-        - model: !Model face-detection-adas-0001
-        - model: !Model face-detection-retail-0004
+        - model: face-detection-adas-0001
+        - model: face-detection-retail-0004
           bs: 2
           show_stats: true
           n_iqs: 1
           duplicate_num: 2
-        - model: !Model face-detection-retail-0005
+        - model: face-detection-retail-0005
           bs: 3
           n_iqs: 999
-        - model: !Model face-detection-retail-0044
+        - model: face-detection-retail-0044
           bs: 4
           show_stats: true
           duplicate_num: 3
@@ -249,7 +248,7 @@ demos:
     cases:
       no_show: true
       input: !DataDirectory human-pose-estimation
-      model: !Model human-pose-estimation-0001
+      model: human-pose-estimation-0001
 
   - name: multi_channel_object_detection_demo_yolov3
     parameters:
@@ -258,15 +257,15 @@ demos:
       no_show: true
       input: !DataPattern object-detection-demo
       split:
-        - model: !Model person-vehicle-bike-detection-crossroad-yolov3-1020
-        - model: !Model yolo-v3-tf
+        - model: person-vehicle-bike-detection-crossroad-yolov3-1020
+        - model: yolo-v3-tf
           duplicate_num: 2
           n_iqs: 20
           fps_sp: 1
           n_sp: 1
           show_stats: true
           real_input_fps: true
-        - model: !Model yolo-v3-tiny-tf
+        - model: yolo-v3-tiny-tf
           duplicate_num: 3
           n_iqs: 9999
           fps_sp: 50
@@ -279,8 +278,8 @@ demos:
     cases:
       input: !TestData how_are_you.wav
       model:
-        - !Model noise-suppression-denseunet-ll-0001
-        - !Model noise-suppression-poconetlike-0001
+        - noise-suppression-denseunet-ll-0001
+        - noise-suppression-poconetlike-0001
 
   # Example with preprocessing parameters for model
   - name: object_detection_demo
@@ -292,7 +291,7 @@ demos:
       split:
         - architecture_type: centernet
           split:
-            - model: !Model ctdet_coco_dlav0_512
+            - model: ctdet_coco_dlav0_512
             - model: !ModelFile
                 name: ctdet_coco_dlav0_512
                 file_name: ctdet_coco_dlav0_512.onnx
@@ -300,14 +299,14 @@ demos:
               scale_values: "73.695 69.87 70.89"
         - architecture_type: faceboxes
           split:
-            - model: !Model faceboxes-pytorch
+            - model: faceboxes-pytorch
             - model: !ModelFile
                 name: faceboxes-pytorch
                 file_name: faceboxes-pytorch.onnx
               mean_values: "104.0 117.0 123.0"
         - architecture_type: retinaface-pytorch
           split:
-            - model: !Model retinaface-resnet50-pytorch
+            - model: retinaface-resnet50-pytorch
             - model: !ModelFile
                 name: retinaface-resnet50-pytorch
                 file_name: retinaface-resnet50-pytorch.onnx
@@ -315,32 +314,32 @@ demos:
         - architecture_type: ssd
           split:
             - model:
-                - !Model face-detection-0206
-                - !Model face-detection-retail-0005
-                - !Model faster-rcnn-resnet101-coco-sparse-60-0001
-                - !Model pedestrian-detection-adas-0002
-                - !Model pelee-coco
-                - !Model person-vehicle-bike-detection-2001
-                - !Model retinanet-tf
-                - !Model ssd512
-                - !Model ssdlite_mobilenet_v2
-                - !Model vehicle-detection-0201
-                - !Model vehicle-license-plate-detection-barrier-0106
+                - face-detection-0206
+                - face-detection-retail-0005
+                - faster-rcnn-resnet101-coco-sparse-60-0001
+                - pedestrian-detection-adas-0002
+                - pelee-coco
+                - person-vehicle-bike-detection-2001
+                - retinanet-tf
+                - ssd512
+                - ssdlite_mobilenet_v2
+                - vehicle-detection-0201
+                - vehicle-license-plate-detection-barrier-0106
             - model: !ModelFile
                 name: ssd-resnet34-1200-onnx
                 file_name: resnet34-ssd1200.onnx
-              reverse_input_channels: None
+              reverse_input_channels: true
               mean_values: 123.675, 116.28, 103.53
               scale_values: 58.395, 57.12, 57.375
         - architecture_type: yolo
           model:
-            - !Model mobilenet-yolo-v4-syg
-            - !Model person-vehicle-bike-detection-crossroad-yolov3-1020
-            - !Model yolo-v1-tiny-tf
-            - !Model yolo-v2-ava-0001
-            - !Model yolo-v2-ava-sparse-35-0001
-            - !Model yolo-v2-ava-sparse-70-0001
-            - !Model yolo-v3-tf
+            - mobilenet-yolo-v4-syg
+            - person-vehicle-bike-detection-crossroad-yolov3-1020
+            - yolo-v1-tiny-tf
+            - yolo-v2-ava-0001
+            - yolo-v2-ava-sparse-35-0001
+            - yolo-v2-ava-sparse-70-0001
+            - yolo-v3-tf
 
   - name: pedestrian_tracker_demo
     parameters:
@@ -353,21 +352,21 @@ demos:
       split:
         - architecture_type: ssd
           split:
-            - model_det: !Model person-detection-retail-0002
-            - model_det: !Model person-detection-retail-0013
-            - model_det: !Model retinanet-tf
+            - model_det: person-detection-retail-0002
+            - model_det: person-detection-retail-0013
+            - model_det: retinanet-tf
               person_label: 1
         - architecture_type: yolo
-          model_det: !Model yolo-v3-tf
+          model_det: yolo-v3-tf
           person_label: 0
         - architecture_type: centernet
-          model_det: !Model ctdet_coco_dlav0_512
+          model_det: ctdet_coco_dlav0_512
           person_label: 0
       model_reid:
-        - !Model person-reidentification-retail-0277
-        - !Model person-reidentification-retail-0286
-        - !Model person-reidentification-retail-0287
-        - !Model person-reidentification-retail-0288
+        - person-reidentification-retail-0277
+        - person-reidentification-retail-0286
+        - person-reidentification-retail-0287
+        - person-reidentification-retail-0288
 
   - name: security_barrier_camera_demo
     parameters:
@@ -377,14 +376,14 @@ demos:
     cases:
       no_show: true
       input: !DataDirectory vehicle-license-plate-detection-barrier
-      model: !Model vehicle-license-plate-detection-barrier-0106
+      model: vehicle-license-plate-detection-barrier-0106
       model_lpr:
         - null
-        - !Model license-plate-recognition-barrier-0001
-        - !Model license-plate-recognition-barrier-0007
+        - license-plate-recognition-barrier-0001
+        - license-plate-recognition-barrier-0007
       model_va:
         - null
-        - !Model vehicle-attributes-recognition-barrier-0039
+        - vehicle-attributes-recognition-barrier-0039
 
   # Example with using different inputs for certain sets of model
   - name: segmentation_demo
@@ -394,17 +393,17 @@ demos:
       no_show: true
       split:
         - input: !DataPattern road-segmentation-adas
-          model: !Model road-segmentation-adas-0001
+          model: road-segmentation-adas-0001
         - input: !DataPattern semantic-segmentation-adas
           model:
-            - !Model fastseg-small
-            - !Model deeplabv3
-            - !Model drn-d-38
-            - !Model ocrnet-hrnet-w48-paddle
-            - !Model semantic-segmentation-adas-0001
-            - !Model fastseg-large
-            - !Model hrnet-v2-c1-segmentation
-            - !Model pspnet-pytorch
+            - fastseg-small
+            - deeplabv3
+            - drn-d-38
+            - ocrnet-hrnet-w48-paddle
+            - semantic-segmentation-adas-0001
+            - fastseg-large
+            - hrnet-v2-c1-segmentation
+            - pspnet-pytorch
 
   # Example with several model keys
   - name: smart_classroom_demo
@@ -416,19 +415,19 @@ demos:
       no_show: true
       input: !DataPattern smart-classroom-demo
       model_fd:
-        - !Model face-detection-adas-0001
+        - face-detection-adas-0001
       split:
-        - model_act: !Model person-detection-raisinghand-recognition-0001
+        - model_act: person-detection-raisinghand-recognition-0001
           a_top: 5
         - split:
-            - model_act: !Model person-detection-action-recognition-0005
-            - model_act: !Model person-detection-action-recognition-0006
+            - model_act: person-detection-action-recognition-0005
+            - model_act: person-detection-action-recognition-0006
               student_ac: sitting,writing,raising_hand,standing,turned_around,lie_on_the_desk
-            - model_act: !Model person-detection-action-recognition-teacher-0002
-          model_lm: !Model landmarks-regression-retail-0009
+            - model_act: person-detection-action-recognition-teacher-0002
+          model_lm: landmarks-regression-retail-0009
           model_reid:
-            - !Model Sphereface
-            - !Model face-recognition-resnet100-arcface-onnx
+            - Sphereface
+            - face-recognition-resnet100-arcface-onnx
 
   - name: social_distance_demo
     parameters:
@@ -439,13 +438,13 @@ demos:
       no_show: true
       input: !DataDirectory person-detection-retail
       model_det:
-        - !Model person-detection-0200
-        - !Model person-detection-0201
-        - !Model person-detection-0202
-        - !Model person-detection-retail-0013
+        - person-detection-0200
+        - person-detection-0201
+        - person-detection-0202
+        - person-detection-retail-0013
       model_reid:
-        - !Model person-reidentification-retail-0277
-        - !Model person-reidentification-retail-0287
+        - person-reidentification-retail-0277
+        - person-reidentification-retail-0287
 
   # consider extra models parameter
   - name: text_detection_demo
@@ -457,36 +456,36 @@ demos:
       no_show: true
       input: !DataPattern text-detection
       model_td:
-        - !Model text-detection-0003
-        - !Model text-detection-0004
-        - !Model horizontal-text-detection-0001
+        - text-detection-0003
+        - text-detection-0004
+        - horizontal-text-detection-0001
       split:
         - dt: ctc
           split:
             - null
-            - model_tr: !Model text-recognition-0012
-            - model_tr: !Model text-recognition-0014
+            - model_tr: text-recognition-0012
+            - model_tr: text-recognition-0014
               tr_pt_first: true
               tr_o_blb_nm: logits
         - dt: simple
           split:
-            - model_tr: !Model text-recognition-resnet-fc
+            - model_tr: text-recognition-resnet-fc
               tr_pt_first: true
-            - model_tr: !Model vitstr-small-patch16-224
+            - model_tr: vitstr-small-patch16-224
               tr_pt_first: true
               m_tr_ss: !OmzData models/public/vitstr-small-patch16-224/vocab.txt
               start_index: 1
               pad: " "
-            - model_tr: !Model text-recognition-0015-encoder
+            - model_tr: text-recognition-0015-encoder
               tr_pt_first: true
               tr_o_blb_nm: logits
               m_tr_ss: "?0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-              extra_models: !Vector [!Model text-recognition-0015-decoder]
-            - model_tr: !Model text-recognition-0016-encoder
+              extra_models: !Vector [text-recognition-0015-decoder]
+            - model_tr: text-recognition-0016-encoder
               tr_pt_first: true
               tr_o_blb_nm: logits
               m_tr_ss: "?0123456789abcdefghijklmnopqrstuvwxyz"
-              extra_models: !Vector [!Model text-recognition-0016-decoder]
+              extra_models: !Vector [text-recognition-0016-decoder]
 
   # PYTHON Demos
   - name: 3d_segmentation_demo
@@ -494,7 +493,7 @@ demos:
       implementation: python
     cases:
       input: !brats_arg BRATS_485.nii.gz
-      model: !Model brain-tumor-segmentation-0001
+      model: brain-tumor-segmentation-0001
       output: "."
 
   - name: action_recognition_demo
@@ -506,14 +505,14 @@ demos:
       input: !DataPattern action-recognition
       split:
         - architecture_type: i3d-rgb
-          model_en: !Model i3d-rgb-tf
+          model_en: i3d-rgb-tf
         - architecture_type: en-de
           split:
-            - model_en: !Model action-recognition-0001-encoder
-              model_de: !Model action-recognition-0001-decoder
+            - model_en: action-recognition-0001-encoder
+              model_de: action-recognition-0001-decoder
 
-            - model_en: !Model driver-action-recognition-adas-0002-encoder
-              model_de: !Model driver-action-recognition-adas-0002-decoder
+            - model_en: driver-action-recognition-adas-0002-encoder
+              model_de: driver-action-recognition-adas-0002-decoder
 
   - name: background_subtraction_demo
     parameters:
@@ -523,12 +522,12 @@ demos:
       input: !DataPattern instance-segmentation
       background: !DataPattern instance-segmentation
       model:
-        - !Model instance-segmentation-person-0007
-        - !Model robust-video-matting-mobilenetv3
-        - !Model background-matting-mobilenetv2
-        - !Model yolact-resnet50-fpn-pytorch
-        - !Model modnet-photographic-portrait-matting
-        - !Model modnet-webcam-portrait-matting
+        - instance-segmentation-person-0007
+        - robust-video-matting-mobilenetv3
+        - background-matting-mobilenetv2
+        - yolact-resnet50-fpn-pytorch
+        - modnet-photographic-portrait-matting
+        - modnet-webcam-portrait-matting
 
   - name: bert_question_answering_demo
     parameters:
@@ -537,31 +536,31 @@ demos:
       input: https://en.wikipedia.org/wiki/OpenVINO
       questions: !Vector ["What frameworks does OpenVINO support?", "Who are developers?"]
       split:
-        - model: !Model bert-small-uncased-whole-word-masking-squad-0001
+        - model: bert-small-uncased-whole-word-masking-squad-0001
           input_names: input_ids,attention_mask,token_type_ids
           output_names: output_s,output_e
           vocab: !ModelFile
             name: bert-small-uncased-whole-word-masking-squad-0001
             file_name: vocab.txt
-        - model: !Model bert-small-uncased-whole-word-masking-squad-0002
+        - model: bert-small-uncased-whole-word-masking-squad-0002
           input_names: input_ids,attention_mask,token_type_ids,position_ids
           output_names: output_s,output_e
           vocab: !ModelFile
             name: bert-small-uncased-whole-word-masking-squad-0002
             file_name: vocab.txt
-        - model: !Model bert-small-uncased-whole-word-masking-squad-int8-0002
+        - model: bert-small-uncased-whole-word-masking-squad-int8-0002
           input_names: input_ids,attention_mask,token_type_ids,position_ids
           output_names: output_s,output_e
           vocab: !ModelFile
             name: bert-small-uncased-whole-word-masking-squad-int8-0002
             file_name: vocab.txt
-        - model: !Model bert-large-uncased-whole-word-masking-squad-0001
+        - model: bert-large-uncased-whole-word-masking-squad-0001
           input_names: input_ids,attention_mask,token_type_ids
           output_names: output_s,output_e
           vocab: !ModelFile
             name: bert-large-uncased-whole-word-masking-squad-0001
             file_name: vocab.txt
-        - model: !Model bert-large-uncased-whole-word-masking-squad-int8-0001
+        - model: bert-large-uncased-whole-word-masking-squad-int8-0001
           input_names: input_ids,attention_mask,token_type_ids
           output_names: output_s,output_e
           vocab: !ModelFile
@@ -576,7 +575,7 @@ demos:
       input: https://en.wikipedia.org/wiki/OpenVINO
       questions: !Vector  ["What frameworks does OpenVINO support?", "Who are developers?"]
       split:
-        - model_emb: !Model bert-large-uncased-whole-word-masking-squad-emb-0001
+        - model_emb: bert-large-uncased-whole-word-masking-squad-emb-0001
           input_names_emb: input_ids,attention_mask,token_type_ids,position_ids
           vocab: !ModelFile
             name: bert-large-uncased-whole-word-masking-squad-emb-0001
@@ -584,12 +583,12 @@ demos:
           mode_qa: bert-small-uncased-whole-word-masking-squad-0001
           input_names_qa: input_ids,attention_mask,token_type_ids
           output_names_qa: output_s,output_e
-        - model_emb: !Model bert-large-uncased-whole-word-masking-squad-emb-0001
+        - model_emb: bert-large-uncased-whole-word-masking-squad-emb-0001
           input_names_emb: input_ids,attention_mask,token_type_ids,position_ids
           vocab: !ModelFile
             name: bert-large-uncased-whole-word-masking-squad-emb-0001
             file_name: vocab.txt
-        - model_emb: !Model bert-small-uncased-whole-word-masking-squad-emb-int8-0001
+        - model_emb: bert-small-uncased-whole-word-masking-squad-emb-int8-0001
           input_names_emb: input_ids,attention_mask,token_type_ids,position_ids
           vocab: !ModelFile
             name: bert-small-uncased-whole-word-masking-squad-emb-int8-0001
@@ -600,7 +599,7 @@ demos:
       implementation: python
     cases:
       input: https://en.wikipedia.org/wiki/OpenVINO
-      model: !Model bert-base-ner
+      model: bert-base-ner
       vocab: !ModelFile
         name: bert-base-ner
         file_name: bert-base-ner/vocab.txt
@@ -615,17 +614,17 @@ demos:
       labels: !OmzData data/dataset_classes/imagenet_2012.txt
       split:
         - model:
-            - !Model alexnet
-            - !Model densenet-121-tf
-            - !Model googlenet-v1
-            - !Model googlenet-v1-tf
-            - !Model googlenet-v3
-            - !Model googlenet-v3-pytorch
-            - !Model mixnet-l
-            - !Model mobilenet-v2-pytorch
-            - !Model repvgg-a0
-            - !Model repvgg-b1
-            - !Model repvgg-b3
+            - alexnet
+            - densenet-121-tf
+            - googlenet-v1
+            - googlenet-v1-tf
+            - googlenet-v3
+            - googlenet-v3-pytorch
+            - mixnet-l
+            - mobilenet-v2-pytorch
+            - repvgg-a0
+            - repvgg-b1
+            - repvgg-b3
         - model: !ModelFile
             name: efficientnet-b0-pytorch
             file_name: efficientnet-b0.onnx
@@ -639,7 +638,7 @@ demos:
     cases:
       no_show: true
       input: !DataPattern classification
-      model: !Model colorization-v2
+      model: colorization-v2
 
   - name: deblurring_demo
     parameters:
@@ -647,7 +646,7 @@ demos:
     cases:
       no_show: true
       input: !DataPattern face-detection-adas
-      model: !Model deblurgan-v2
+      model: deblurgan-v2
 
   - name: face_detection_mtcnn_demo
     parameters:
@@ -656,9 +655,9 @@ demos:
     cases:
       no_show: true
       input: !image_net_arg 00000002
-      model_p: !Model mtcnn-p
-      model_r: !Model mtcnn-r
-      model_o: !Model mtcnn-o
+      model_p: mtcnn-p
+      model_r: mtcnn-r
+      model_o: mtcnn-o
 
   - name: face_recognition_demo
     parameters:
@@ -670,16 +669,16 @@ demos:
       input: !DataPattern face-detection-adas
       fg: !DataDirectory face-recognition-gallery
       model_fd:
-        - !Model face-detection-adas-0001
-        - !Model face-detection-retail-0004
-        - !Model face-detection-retail-0005
-        - !Model face-detection-retail-0044
-      model_lm: !Model landmarks-regression-retail-0009
+        - face-detection-adas-0001
+        - face-detection-retail-0004
+        - face-detection-retail-0005
+        - face-detection-retail-0044
+      model_lm: landmarks-regression-retail-0009
       model_reid:
-        - !Model Sphereface
-        - !Model face-reidentification-retail-0095
-        - !Model face-recognition-resnet100-arcface-onnx
-        - !Model facenet-20180408-102900
+        - Sphereface
+        - face-reidentification-retail-0095
+        - face-recognition-resnet100-arcface-onnx
+        - facenet-20180408-102900
 
   - name: formula_recognition_demo
     parameters:
@@ -689,14 +688,14 @@ demos:
       no_show: true
       split:
         - input: !OmzData models/intel/formula-recognition-medium-scan-0001/assets/formula-recognition-medium-scan-0001.png
-          model_encoder: !Model formula-recognition-medium-scan-0001-im2latex-encoder
-          model_decoder: !Model formula-recognition-medium-scan-0001-im2latex-decoder
+          model_encoder: formula-recognition-medium-scan-0001-im2latex-encoder
+          model_decoder: formula-recognition-medium-scan-0001-im2latex-decoder
           vocab: !ModelFile
             name: formula-recognition-medium-scan-0001-im2latex-decoder
             file_name: vocab.json
         - input: !OmzData models/intel/formula-recognition-polynomials-handwritten-0001/assets/formula-recognition-polynomials-handwritten-0001.png
-          model_encoder: !Model formula-recognition-polynomials-handwritten-0001-encoder
-          model_decoder: !Model formula-recognition-polynomials-handwritten-0001-decoder
+          model_encoder: formula-recognition-polynomials-handwritten-0001-encoder
+          model_decoder: formula-recognition-polynomials-handwritten-0001-decoder
           vocab: !ModelFile
             name: formula-recognition-polynomials-handwritten-0001-decoder
             file_name: vocab.json
@@ -708,13 +707,13 @@ demos:
     cases:
       no_show: true
       input: !TestData msasl/global_crops/_nz_sivss20/clip_0017/img_%05d.jpg
-      model_d: !Model person-detection-asl-0001
+      model_d: person-detection-asl-0001
       split:
-        - model_a: !Model asl-recognition-0004
+        - model_a: asl-recognition-0004
           c: !OmzData data/dataset_classes/msasl100.json
-        - model_a: !Model common-sign-language-0001
+        - model_a: common-sign-language-0001
           c: !OmzData data/dataset_classes/jester27.json
-        - model_a: !Model common-sign-language-0002
+        - model_a: common-sign-language-0002
           c: !OmzData data/dataset_classes/common_sign_language12.json
 
   - name: gpt2_text_prediction_demo
@@ -723,7 +722,7 @@ demos:
     cases:
       no_show: true
       input: !Vector ["The poem was written by"]
-      model: !Model gpt-2
+      model: gpt-2
       vocab: !ModelFile
         name: gpt-2
         file_name: gpt2/vocab.json
@@ -737,10 +736,10 @@ demos:
     cases:
       split:
         - input: !OmzData models/intel/handwritten-japanese-recognition-0001/assets/handwritten-japanese-recognition-0001.png
-          model: !Model handwritten-japanese-recognition-0001
+          model: handwritten-japanese-recognition-0001
           charlist: !OmzData data/dataset_classes/kondate_nakayosi.txt
         - input: !OmzData models/intel/handwritten-simplified-chinese-recognition-0001/assets/handwritten-simplified-chinese-recognition-0001.png
-          model: !Model handwritten-simplified-chinese-recognition-0001
+          model: handwritten-simplified-chinese-recognition-0001
           charlist: !OmzData data/dataset_classes/scut_ept.txt
 
   - name: human_pose_estimation_3d_demo
@@ -749,7 +748,7 @@ demos:
     cases:
       no_show: true
       input: !DataPattern human-pose-estimation
-      model: !Model human-pose-estimation-3d-0001
+      model: human-pose-estimation-3d-0001
 
   - name: human_pose_estimation_demo
     parameters:
@@ -759,14 +758,14 @@ demos:
       input: !DataPattern human-pose-estimation
       split:
         - architecture_type: openpose
-          model: !Model human-pose-estimation-0001
+          model: human-pose-estimation-0001
         - architecture_type: higherhrnet
-          model: !Model higher-hrnet-w32-human-pose-estimation
+          model: higher-hrnet-w32-human-pose-estimation
         - architecture_type: ae
           model:
-            - !Model human-pose-estimation-0005
-            - !Model human-pose-estimation-0006
-            - !Model human-pose-estimation-0007
+            - human-pose-estimation-0005
+            - human-pose-estimation-0006
+            - human-pose-estimation-0007
 
   - name: image_inpainting_demo
     parameters:
@@ -774,7 +773,7 @@ demos:
     cases:
       no_show: true
       input: !image_net_arg 00048311
-      model: !Model gmcnn-places2-tf
+      model: gmcnn-places2-tf
       auto_mask_random: true
 
   - name: image_retrieval_demo
@@ -782,7 +781,7 @@ demos:
       implementation: python
     cases:
       no_show: true
-      model: !Model image-retrieval-0001
+      model: image-retrieval-0001
       input: !DataListOfFiles image-retrieval-video
       gallery: !image_retrieval_arg gallery.txt
 
@@ -794,18 +793,18 @@ demos:
       input: !DataPattern instance-segmentation
       labels: !OmzData data/dataset_classes/coco_80cl_bkgr.txt
       model:
-        - !Model instance-segmentation-security-0002
-        - !Model instance-segmentation-security-0091
-        - !Model instance-segmentation-security-0228
-        - !Model instance-segmentation-security-1039
-        - !Model instance-segmentation-security-1040
+        - instance-segmentation-security-0002
+        - instance-segmentation-security-0091
+        - instance-segmentation-security-0228
+        - instance-segmentation-security-1039
+        - instance-segmentation-security-1040
 
   - name: machine_translation_demo
     parameters:
       implementation: python
     cases:
       split:
-        - model: !Model machine-translation-nar-en-ru-0002
+        - model: machine-translation-nar-en-ru-0002
           tokenizer-src: !ModelFile
             name: machine-translation-nar-en-ru-0002
             file_name: tokenizer_src
@@ -817,7 +816,7 @@ demos:
                             "The five boxing wizards jump quickly.",
                             "Jackdaws love my big sphinx of quartz.",
                          ]
-        - model: !Model machine-translation-nar-ru-en-0002
+        - model: machine-translation-nar-ru-en-0002
           tokenizer-src: !ModelFile
             name: machine-translation-nar-ru-en-0002
             file_name: tokenizer_src
@@ -836,7 +835,7 @@ demos:
     cases:
       no_show: true
       input: !DataPattern object-detection-demo
-      model: !Model midasnet
+      model: midasnet
 
   - name: multi_camera_multi_target_tracking_demo
     parameters:
@@ -844,12 +843,12 @@ demos:
       model_keys: [m, m_reid]
     cases:
       no_show: true
-      model: !Model person-detection-retail-0013
+      model: person-detection-retail-0013
       model_reid:
-        - !Model person-reidentification-retail-0277
-        - !Model person-reidentification-retail-0286
-        - !Model person-reidentification-retail-0287
-        - !Model person-reidentification-retail-0288
+        - person-reidentification-retail-0277
+        - person-reidentification-retail-0286
+        - person-reidentification-retail-0287
+        - person-reidentification-retail-0288
       input: !Vector
         - !DataPattern multi-camera-multi-target-tracking
         - !DataPattern multi-camera-multi-target-tracking/repeated
@@ -860,8 +859,8 @@ demos:
     cases:
       input: !TestData how_are_you.wav
       model:
-        - !Model noise-suppression-denseunet-ll-0001
-        - !Model noise-suppression-poconetlike-0001
+        - noise-suppression-denseunet-ll-0001
+        - noise-suppression-poconetlike-0001
 
   - name: object_detection_demo
     parameters:
@@ -872,64 +871,64 @@ demos:
       split:
         - architecture_type: centernet
           split:
-            - model: !Model ctdet_coco_dlav0_512
+            - model: ctdet_coco_dlav0_512
             - model: !ModelFile
                 name: ctdet_coco_dlav0_512
                 file_name: ctdet_coco_dlav0_512.onnx
-              mean_values: ["104.04", "113.985", "119.85"]
-              scale_values: ["73.695", "69.87", "70.89"]
+              mean_values: !Vector ["104.04", "113.985", "119.85"]
+              scale_values: !Vector ["73.695", "69.87", "70.89"]
         - architecture_type: faceboxes
           split:
-            - model: !Model faceboxes-pytorch
+            - model: faceboxes-pytorch
             - model: !ModelFile
                 name: faceboxes-pytorch
                 file_name: faceboxes-pytorch.onnx
-              mean_values: ["104.0", "117.0", "123.0"]
+              mean_values: !Vector ["104.0", "117.0", "123.0"]
         - architecture_type: ctpn
-          model: !Model ctpn
+          model: ctpn
         - architecture_type: retinaface-pytorch
           split:
-            - model: !Model retinaface-resnet50-pytorch
+            - model: retinaface-resnet50-pytorch
             - model: !ModelFile
                 name: retinaface-resnet50-pytorch
                 file_name: retinaface-resnet50-pytorch.onnx
-              mean_values: ["104.0", "117.0", "123.0"]
+              mean_values: !Vector ["104.0", "117.0", "123.0"]
         - architecture_type: ssd
           split:
             - model:
-                - !Model efficientdet-d0-tf
-                - !Model efficientdet-d1-tf
-                - !Model face-detection-0200
-                - !Model face-detection-0202
-                - !Model face-detection-0204
-                - !Model face-detection-0205
-                - !Model face-detection-0206
-                - !Model face-detection-adas-0001
-                - !Model face-detection-retail-0004
-                - !Model face-detection-retail-0005
-                - !Model face-detection-retail-0044
-                - !Model faster-rcnn-resnet101-coco-sparse-60-0001
-                - !Model pedestrian-detection-adas-0002
-                - !Model pelee-coco
-                - !Model person-vehicle-bike-detection-2001
-                - !Model retinanet-tf
-                - !Model ssd300
-                - !Model ssd512
-                - !Model ssdlite_mobilenet_v2
-                - !Model vehicle-detection-0201
-                - !Model vehicle-license-plate-detection-barrier-0106
-                - !Model person-detection-0106
+                - efficientdet-d0-tf
+                - efficientdet-d1-tf
+                - face-detection-0200
+                - face-detection-0202
+                - face-detection-0204
+                - face-detection-0205
+                - face-detection-0206
+                - face-detection-adas-0001
+                - face-detection-retail-0004
+                - face-detection-retail-0005
+                - face-detection-retail-0044
+                - faster-rcnn-resnet101-coco-sparse-60-0001
+                - pedestrian-detection-adas-0002
+                - pelee-coco
+                - person-vehicle-bike-detection-2001
+                - retinanet-tf
+                - ssd300
+                - ssd512
+                - ssdlite_mobilenet_v2
+                - vehicle-detection-0201
+                - vehicle-license-plate-detection-barrier-0106
+                - person-detection-0106
             - model: !ModelFile
                 name: ssd-resnet34-1200-onnx
                 file_name: resnet34-ssd1200.onnx
-              reverse_input_channels: None
-              mean_values: ["123.675", "116.28", "103.53"]
-              scale_values: ["58.395", "57.12", "57.375"]
+              reverse_input_channels: true
+              mean_values: !Vector ["123.675", "116.28", "103.53"]
+              scale_values: !Vector ["58.395", "57.12", "57.375"]
         - architecture_type: ultra_lightweight_face_detection
           split:
             - model:
-                - !Model ultra-lightweight-face-detection-rfb-320
-                - !Model ultra-lightweight-face-detection-slim-320
+                - ultra-lightweight-face-detection-rfb-320
+                - ultra-lightweight-face-detection-slim-320
             - model:
                 - !ModelFile
                   name: ultra-lightweight-face-detection-rfb-320
@@ -937,69 +936,69 @@ demos:
                 - !ModelFile
                   name: ultra-lightweight-face-detection-slim-320
                   file_name: ultra-lightweight-face-detection-slim-320.onnx
-              mean_values: ["127.0", "127.0", "127.0"]
-              scale_values: ["128.0", "128.0", "128.0"]
+              mean_values: !Vector ["127.0", "127.0", "127.0"]
+              scale_values: !Vector ["128.0", "128.0", "128.0"]
         - architecture_type: yolo
           model:
-            - !Model mobilefacedet-v1-mxnet
-            - !Model mobilenet-yolo-v4-syg
-            - !Model person-vehicle-bike-detection-crossroad-yolov3-1020
-            - !Model yolo-v1-tiny-tf
-            - !Model yolo-v2-ava-0001
-            - !Model yolo-v2-ava-sparse-35-0001
-            - !Model yolo-v2-ava-sparse-70-0001
-            - !Model yolo-v2-tf
-            - !Model yolo-v2-tiny-ava-0001
-            - !Model yolo-v2-tiny-ava-sparse-30-0001
-            - !Model yolo-v2-tiny-ava-sparse-60-0001
-            - !Model yolo-v2-tiny-tf
-            - !Model yolo-v2-tiny-vehicle-detection-0001
-            - !Model yolo-v3-tf
-            - !Model yolo-v3-tiny-tf
+            - mobilefacedet-v1-mxnet
+            - mobilenet-yolo-v4-syg
+            - person-vehicle-bike-detection-crossroad-yolov3-1020
+            - yolo-v1-tiny-tf
+            - yolo-v2-ava-0001
+            - yolo-v2-ava-sparse-35-0001
+            - yolo-v2-ava-sparse-70-0001
+            - yolo-v2-tf
+            - yolo-v2-tiny-ava-0001
+            - yolo-v2-tiny-ava-sparse-30-0001
+            - yolo-v2-tiny-ava-sparse-60-0001
+            - yolo-v2-tiny-tf
+            - yolo-v2-tiny-vehicle-detection-0001
+            - yolo-v3-tf
+            - yolo-v3-tiny-tf
         - architecture_type: yolov3-onnx
           model:
-            - !Model yolo-v3-onnx
-            - !Model yolo-v3-tiny-onnx
+            - yolo-v3-onnx
+            - yolo-v3-tiny-onnx
         - architecture_type: yolov4
           model:
-            - !Model yolo-v4-tf
-            - !Model yolo-v4-tiny-tf
+            - yolo-v4-tf
+            - yolo-v4-tiny-tf
         - architecture_type: yolof
-          model: !Model yolof
+          model: yolof
         - architecture_type: detr
           split:
-            - model: !Model detr-resnet50
+            - model: detr-resnet50
             - model: !ModelFile
                 name: detr-resnet50
                 file_name: detr-resnet50.onnx
               reverse_input_channels: true
-              mean_values: ["123.675", "116.28", "103.53"]
-              scale_values: ["58.395", "57.12", "57.375"]
+              mean_values: !Vector ["123.675", "116.28", "103.53"]
+              scale_values: !Vector ["58.395", "57.12", "57.375"]
         - architecture_type: yolox
           split:
-            - model: !Model yolox-tiny
+            - model: yolox-tiny
             - model: !ModelFile
                 name: yolox-tiny
                 file_name: yolox-tiny.onnx
               reverse_input_channels: true
-              mean_values: ["123.675", "116.28", "103.53"]
-              scale_values: ["58.395", "57.12", "57.375"]
+              mean_values: !Vector ["123.675", "116.28", "103.53"]
+              scale_values: !Vector ["58.395", "57.12", "57.375"]
         - architecture_type: nanodet
           split:
-            - model: !Model nanodet-m-1.5x-416
+            - model: nanodet-m-1.5x-416
             - model: !ModelFile
                 name: nanodet-m-1.5x-416
                 file_name: nanodet-m-1.5x-416.onnx
-              mean_values: ["103.53", "116.28", "123.675"]
-              scale_values: ["57.375", "57.12", "58.395"]
+              mean_values: !Vector ["103.53", "116.28", "123.675"]
+              scale_values: !Vector ["57.375", "57.12", "58.395"]
         - architecture_type: nanodet-plus
           split:
-            - model: !Model nanodet-plus-m-1.5x-416
+            - model: nanodet-plus-m-1.5x-416
             - model: !ModelFile
                 name: nanodet-plus-m-1.5x-416
                 file_name: nanodet-plus-m-1.5x-416.onnx
-              mean_values: ["103.53", "116.28", "123.675"]
-              scale_values: ["57.375", "57.12", "58.395"]
+              mean_values: !Vector ["103.53", "116.28", "123.675"]
+              scale_values: !Vector ["57.375", "57.12", "58.395"]
 
   - name: segmentation_demo
     parameters:
@@ -1009,25 +1008,25 @@ demos:
       split:
         - input: !DataPattern road-segmentation-adas
           architecture_type: segmentation
-          model: !Model road-segmentation-adas-0001
+          model: road-segmentation-adas-0001
         - input: !DataPattern semantic-segmentation-adas
           architecture_type: segmentation
           model:
-            - !Model semantic-segmentation-adas-0001
-            - !Model fastseg-large
-            - !Model fastseg-small
-            - !Model hrnet-v2-c1-segmentation
-            - !Model icnet-camvid-ava-0001
-            - !Model icnet-camvid-ava-sparse-30-0001
-            - !Model icnet-camvid-ava-sparse-60-0001
-            - !Model unet-camvid-onnx-0001
-            - !Model deeplabv3
-            - !Model ocrnet-hrnet-w48-paddle
-            - !Model pspnet-pytorch
-            - !Model drn-d-38
+            - semantic-segmentation-adas-0001
+            - fastseg-large
+            - fastseg-small
+            - hrnet-v2-c1-segmentation
+            - icnet-camvid-ava-0001
+            - icnet-camvid-ava-sparse-30-0001
+            - icnet-camvid-ava-sparse-60-0001
+            - unet-camvid-onnx-0001
+            - deeplabv3
+            - ocrnet-hrnet-w48-paddle
+            - pspnet-pytorch
+            - drn-d-38
         - input: !DataPattern road-segmentation-adas
           architecture_type: salient_object_detection
-          model: !Model f3net
+          model: f3net
 
   - name: single_human_pose_estimation_demo
     parameters:
@@ -1037,23 +1036,23 @@ demos:
       no_show: true
       input: !DataPattern human-pose-estimation
       person_label: 1
-      model_hpe: !Model single-human-pose-estimation-0001
+      model_hpe: single-human-pose-estimation-0001
       model_od:
-        - !Model mobilenet-ssd
-        - !Model person-detection-retail-0013
-        - !Model ssd_mobilenet_v1_coco
+        - mobilenet-ssd
+        - person-detection-retail-0013
+        - ssd_mobilenet_v1_coco
 
   - name: smartlab_demo
     parameters:
       implementation: python
       model_keys: [m_ta, m_tm, m_fa, m_fm, m_en, m_de]
     cases:
-      model_ta: !Model smartlab-object-detection-0001
-      model_tm: !Model smartlab-object-detection-0002
-      model_fa: !Model smartlab-object-detection-0003
-      model_fm: !Model smartlab-object-detection-0004
-      model_en: !Model i3d-rgb-tf
-      model_de: !Model smartlab-sequence-modelling-0001
+      model_ta: smartlab-object-detection-0001
+      model_tm: smartlab-object-detection-0002
+      model_fa: smartlab-object-detection-0003
+      model_fm: smartlab-object-detection-0004
+      model_en: i3d-rgb-tf
+      model_de: smartlab-sequence-modelling-0001
       topview: !TestData data/test_data/videos/smartlab/stream_8_top.mp4
       sideview: !TestData data/test_data/videos/smartlab/stream_8_front.mp4
 
@@ -1062,7 +1061,7 @@ demos:
       implementation: python
     cases:
       input: !TestData how_are_you.wav
-      model: !Model aclnet
+      model: aclnet
 
   - name: speech_recognition_deepspeech_demo
     parameters:
@@ -1070,23 +1069,23 @@ demos:
     cases:
       input: !TestData how_are_you.wav
       split:
-        - model: !Model mozilla-deepspeech-0.8.2
+        - model: mozilla-deepspeech-0.8.2
           profile: mds08x_en
           lm: !ModelFile
             name: mozilla-deepspeech-0.8.2
             file_name: deepspeech-0.8.2-models.kenlm
-        - model: !Model mozilla-deepspeech-0.6.1
+        - model: mozilla-deepspeech-0.6.1
           profile: mds06x_en
           lm: !ModelFile
             name: mozilla-deepspeech-0.6.1
             file_name: deepspeech-0.6.1-models/lm.binary
-        - model: !Model mozilla-deepspeech-0.8.2
+        - model: mozilla-deepspeech-0.8.2
           profile: mds08x_en
           lm: !ModelFile
             name: mozilla-deepspeech-0.8.2
             file_name: deepspeech-0.8.2-models.kenlm
           realtime: true
-        - model: !Model mozilla-deepspeech-0.8.2
+        - model: mozilla-deepspeech-0.8.2
           profile: mds08x_en
 
   - name: speech_recognition_quartznet_demo
@@ -1095,7 +1094,7 @@ demos:
     cases:
       input: !TestData how_are_you.wav
       model:
-        - !Model quartznet-15x5-en
+        - quartznet-15x5-en
         - !ModelFile
           name: quartznet-15x5-en
           file_name: quartznet.onnx
@@ -1106,7 +1105,7 @@ demos:
       parser_name: perf
     cases:
       input: !TestData how_are_you.wav
-      model: !Model wav2vec2-base
+      model: wav2vec2-base
 
   - name: text_spotting_demo
     parameters:
@@ -1115,9 +1114,9 @@ demos:
     cases:
       no_show: true
       input: !DataPattern text-detection
-      model_m: !Model text-spotting-0005-detector
-      model_te: !Model text-spotting-0005-recognizer-encoder
-      model_td: !Model text-spotting-0005-recognizer-decoder
+      model_m: text-spotting-0005-detector
+      model_te: text-spotting-0005-recognizer-encoder
+      model_td: text-spotting-0005-recognizer-decoder
       delay: 1
       no_track: true
 
@@ -1128,16 +1127,16 @@ demos:
     cases:
       input: !Vector ["The quick brown fox jumps over the lazy dog.", "The five boxing wizards jump quickly."]
       split:
-        - model_duration: !Model forward-tacotron-duration-prediction
-          model_forward: !Model forward-tacotron-regression
-          model_upsample: !Model wavernn-upsampler
-          model_rnn: !Model wavernn-rnn
-        - model_duration: !Model text-to-speech-en-0001-duration-prediction
-          model_forward: !Model text-to-speech-en-0001-regression
-          model_melgan: !Model text-to-speech-en-0001-generation
-        - model_duration: !Model text-to-speech-en-multi-0001-duration-prediction
-          model_forward: !Model text-to-speech-en-multi-0001-regression
-          model_melgan: !Model text-to-speech-en-multi-0001-generation
+        - model_duration: forward-tacotron-duration-prediction
+          model_forward: forward-tacotron-regression
+          model_upsample: wavernn-upsampler
+          model_rnn: wavernn-rnn
+        - model_duration: text-to-speech-en-0001-duration-prediction
+          model_forward: text-to-speech-en-0001-regression
+          model_melgan: text-to-speech-en-0001-generation
+        - model_duration: text-to-speech-en-multi-0001-duration-prediction
+          model_forward: text-to-speech-en-multi-0001-regression
+          model_melgan: text-to-speech-en-multi-0001-generation
 
   - name: time_series_forecasting_demo
     parameters:
@@ -1155,9 +1154,9 @@ demos:
       input: !TestData msasl/global_crops/_nz_sivss20/clip_0017/img_%05d.jpg
       split:
         - model_i:
-            - !Model instance-segmentation-security-0002
-            - !Model instance-segmentation-security-0228
-            - !Model instance-segmentation-security-1039
-            - !Model instance-segmentation-security-1040
+            - instance-segmentation-security-0002
+            - instance-segmentation-security-0228
+            - instance-segmentation-security-1039
+            - instance-segmentation-security-1040
         - model_s:
-            - !Model semantic-segmentation-adas-0001
+            - semantic-segmentation-adas-0001

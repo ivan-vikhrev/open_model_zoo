@@ -1,0 +1,76 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+title: Schema for configuration file of demo tests
+properties:
+  demos:
+    type: array
+    items:
+      type: object
+      properties:
+        name:
+          type: string
+        parameters:
+          type: object
+          properties:
+            implementation:
+              type: string
+              enum:
+                - cpp
+                - cpp_gapi
+                - python
+            model_keys:
+              type: array
+              items:
+                type: string
+            device_keys:
+              type: array
+              items:
+                type: string
+          required: [implementation]
+        cases:
+          $id: "/demos/cases"
+          type: object
+          properties:
+            no_show:
+              type: boolean
+            input:
+              type:
+                - string
+                - DataPatternArg
+                - TestDataArg
+                - OmzDataArg
+                - DataDirectoryArg
+                - DataDirectoryOrigFileNamesArg
+                - DataListOfFilesArg
+                - DataPatternArg
+                - image_net_arg
+                - image_retrieval_arg
+                - brats_arg
+                - VectorArg
+            architecture_type:
+              type: string
+            mean_values:
+              type:
+                - string
+                - VectorArg
+            scale_values:
+              type:
+                - string
+                - VectorArg
+            split:
+              type: array
+              items:
+                anyOf:
+                  - type: "null"
+                  - $ref: "/demos/cases"
+            extra_models:
+              type: VectorArg
+          patternProperties:
+            "^model.*":
+              anyOf:
+                - type: [string, ModelArg, ModelFileArg]
+                - type: array
+                  items:
+                    type: [string, ModelArg, ModelFileArg, "null"]
+
+      required: [name, parameters, cases]

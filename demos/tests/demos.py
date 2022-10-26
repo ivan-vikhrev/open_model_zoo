@@ -20,7 +20,8 @@ import sys
 
 from args import ModelArg
 from parsers import Parser
-from utils import ClassProvider, combine_cases, create_test_cases
+from providers import ClassProvider
+from utils import create_test_cases
 
 
 class Demo(ClassProvider):
@@ -73,35 +74,8 @@ class Demo(ClassProvider):
             self.test_cases.remove(case)
         self.test_cases.append(new_case)
 
-    def update_option(self, updated_options):
-        for case in self.test_cases[:]:
-            self.update_case(case, updated_options, with_replacement=True)
-        return self
-
-    def add_test_cases(self, *new_cases):
-        for test_case in new_cases:
-            self.test_cases = combine_cases(self.test_cases, test_case)
-        return self
-
-    def exclude_models(self, models):
-        for case in self.test_cases[:]:
-            for model, _ in self.get_models(case):
-                if not isinstance(model, ModelArg) or model.name in set(models):
-                    self.test_cases.remove(case)
-                    continue
-        return self
-
-    def only_models(self, models):
-        for case in self.test_cases[:]:
-            for model, _ in self.get_models(case):
-                if not isinstance(model, ModelArg) or model.name not in set(models):
-                    self.test_cases.remove(case)
-                    continue
-        return self
-
-    def only_devices(self, devices):
+    def set_devices(self, devices):
         self.supported_devices = devices
-        return self
 
     def set_precisions(self, precisions, model_info):
         for case in self.test_cases[:]:

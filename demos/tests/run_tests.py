@@ -45,6 +45,7 @@ from args import AbstractArg, AbstractModelArg, ArgContext, ModelArg
 from data_sequences import DATA_SEQUENCES
 from parsers import Parser
 from utils import read_yaml
+from validation.validation import validate
 
 from demos import Demo, create_demos_from_yaml
 
@@ -273,8 +274,11 @@ def get_parsers_from_demos(demos, parser_path) -> dict:
 def main():
     args = parse_args()
 
-    # DEMOS = scopes[args.scope]
-    DEMOS = create_demos_from_yaml(read_yaml(args.config))
+    # Read and validation config file
+    config = read_yaml(args.config)
+    validate(config)
+
+    DEMOS = create_demos_from_yaml(config)
     suppressed_devices = parse_supported_device_list(args.supported_devices)
 
     # Set up directories
