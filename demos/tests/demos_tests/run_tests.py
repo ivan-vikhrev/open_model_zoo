@@ -41,13 +41,12 @@ import tempfile
 import timeit
 from pathlib import Path
 
-from args import AbstractArg, AbstractModelArg, ArgContext, ModelArg
-from data_sequences import DATA_SEQUENCES
-from parsers import Parser
-from utils import read_yaml
-from validation.validation import validate
-
-from demos import Demo, create_demos_from_yaml
+from demos_tests.args import AbstractArg, AbstractModelArg, ArgContext, ModelArg
+from demos_tests.data_sequences import DATA_SEQUENCES
+from demos_tests.demos import Demo, create_demos_from_yaml
+from demos_tests.parsers import Parser
+from demos_tests.utils import read_yaml
+from demos_tests.yaml_validation import validate
 
 
 def parser_paths_list(supported_devices):
@@ -68,7 +67,12 @@ def parse_args():
         metavar="DIR",
         help="directory to use as the cache for the model downloader",
     )
-    parser.add_argument("--config", type=Path, default="default_config.yml", help="The config file with test cases")
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=Path(__file__).parents[1].resolve() / "configs/default_config.yml",
+        help="The config file with test cases",
+    )
     parser.add_argument(
         "--demos",
         metavar="DEMO[,DEMO...]",
@@ -282,7 +286,7 @@ def main():
     suppressed_devices = parse_supported_device_list(args.supported_devices)
 
     # Set up directories
-    omz_dir = (Path(__file__).parent / "../..").resolve()
+    omz_dir = (Path(__file__).parents[3]).resolve()
     demos_dir = omz_dir / "demos"
     auto_tools_dir = omz_dir / "tools/model_tools"
 

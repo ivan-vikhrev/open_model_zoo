@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import List, Union
 
 import yaml
-from args import AbstractArg, ModelArg
+from demos_tests.args import AbstractArg, ModelArg
 
 # Functions to read and parsing yaml files
 

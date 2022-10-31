@@ -20,7 +20,7 @@ Parsers for output od demo processing
 import re
 from pathlib import Path
 
-from providers import ClassProvider
+from demos_tests.providers import ClassProvider
 
 
 class Parser(ClassProvider):

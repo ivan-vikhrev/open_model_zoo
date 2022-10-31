@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from args import brats_arg, image_net_arg, image_retrieval_arg
+from demos_tests.args import brats_arg, image_net_arg, image_retrieval_arg
 
 DATA_SEQUENCES = {
     "375x500": [

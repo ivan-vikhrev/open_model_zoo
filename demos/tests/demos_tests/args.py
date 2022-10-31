@@ -29,7 +29,7 @@ ArgContext = collections.namedtuple(
 
 RequestedModel = collections.namedtuple("RequestedModel", ["name", "precisions"])
 
-OMZ_DIR = Path(__file__).parents[2].resolve()
+OMZ_DIR = Path(__file__).parents[3].resolve()
 
 
 class AbstractArg(yaml.YAMLObject):

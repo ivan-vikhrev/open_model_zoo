@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from args import AbstractArg
+from pathlib import Path
+
+from demos_tests.args import AbstractArg
+from demos_tests.utils import read_yaml
 from jsonschema import Draft202012Validator, validators
-from utils import read_yaml
 
 # Functions for additional types
 
@@ -25,8 +27,8 @@ def all_subclasses(cls):
 
 def add_custom_types(validator):
     type_checker = validator.TYPE_CHECKER
-    # Add types
 
+    # Add types
     for type in all_subclasses(AbstractArg):
         type_checker = type_checker.redefine(type.__name__, lambda checker, value, type=type: isinstance(value, type))
 
@@ -43,7 +45,7 @@ def add_custom_types(validator):
 
 def validate(config) -> None:
     class_validator = add_custom_types(Draft202012Validator)
-    schema = read_yaml("validation/schema.yml")
+    schema = read_yaml(Path(__file__).parent.resolve() / "schema.yml")
     custom_validator = class_validator(schema)
 
     custom_validator.validate(config)

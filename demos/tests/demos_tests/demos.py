@@ -18,10 +18,10 @@ Classes for description tested demo
 
 import sys
 
-from args import ModelArg
-from parsers import Parser
-from providers import ClassProvider
-from utils import create_test_cases
+from demos_tests.args import ModelArg
+from demos_tests.parsers import Parser
+from demos_tests.providers import ClassProvider
+from demos_tests.utils import create_test_cases
 
 
 class Demo(ClassProvider):
