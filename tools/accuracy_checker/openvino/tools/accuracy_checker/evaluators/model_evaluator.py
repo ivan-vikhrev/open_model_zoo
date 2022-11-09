@@ -477,7 +477,8 @@ class ModelEvaluator(BaseEvaluator):
         if self.postprocessor.has_processors:
             print_info("Postprocess results:")
             self.dataset.provide_data_info(annotations, progress_reporter)
-            annotations, predictions = self.postprocessor.full_process(annotations, predictions)
+            image_metas = [prediction.metadata for prediction in predictions]
+            annotations, predictions = self.postprocessor.full_process(annotations, predictions, image_metas)
         self.metric_executor.update_metrics_on_batch(
             range(len(annotations)), annotations, predictions
         )

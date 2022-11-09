@@ -158,14 +158,14 @@ class SegmentationAnnotation(SegmentationRepresentation):
 
 
 class SegmentationPrediction(SegmentationRepresentation):
-    def __init__(self, identifiers, mask):
+    def __init__(self, identifiers, mask, metadata=None):
         """
         Args:
             identifiers: object identifier (e.g. image name).
             mask: array with shape (n_classes, height, width) of probabilities at each location.
         """
 
-        super().__init__(identifiers)
+        super().__init__(identifiers, metadata)
         self.mask = mask
 
     def to_annotation(self, **kwargs):
