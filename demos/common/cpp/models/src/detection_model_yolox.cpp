@@ -71,7 +71,7 @@ void ModelYoloX::prepareInputsOutputs(std::shared_ptr<ov::Model>& model) {
     inputsNames.push_back(input.get_any_name());
     netInputWidth = inputShape[ov::layout::width_idx(inputLayout)];
     netInputHeight = inputShape[ov::layout::height_idx(inputLayout)];
-    prepareGridsAndStrides();
+    setStridesGrids();
 
     // --------------------------- Prepare output  -----------------------------------------------------
     if (model->outputs().size() != 1) {
@@ -89,7 +89,7 @@ void ModelYoloX::prepareInputsOutputs(std::shared_ptr<ov::Model>& model) {
     model = ppp.build();
 }
 
-void ModelYoloX::prepareGridsAndStrides() {
+void ModelYoloX::setStridesGrids() {
     std::vector<size_t> strides = {8, 16, 32};
     std::vector<size_t> hsizes(3);
     std::vector<size_t> wsizes(3);
@@ -102,7 +102,7 @@ void ModelYoloX::prepareGridsAndStrides() {
     for (size_t size_index = 0; size_index < hsizes.size(); ++size_index) {
         for (size_t h_index = 0; h_index < hsizes[size_index]; ++h_index) {
             for (size_t w_index = 0; w_index < wsizes[size_index]; ++w_index) {
-                grids.push_back({w_index, h_index});
+                grids.emplace_back(w_index, h_index);
                 expandedStrides.push_back(strides[size_index]);
             }
         }

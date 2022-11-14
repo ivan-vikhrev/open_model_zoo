@@ -15,19 +15,13 @@
 */
 
 #pragma once
-#include <stddef.h>
-#include <stdint.h>
-
-#include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
-#include <openvino/op/region_yolo.hpp>
 #include <openvino/openvino.hpp>
 
 #include "models/detection_model.h"
-#include "utils/image_utils.h"
-#include "utils/nms.hpp"
 
 class ModelYoloX: public DetectionModel {
 public:
@@ -51,7 +45,7 @@ public:
 
 protected:
     void prepareInputsOutputs(std::shared_ptr<ov::Model>& model) override;
-    void prepareGridsAndStrides();
+    void setStridesGrids();
 
     double boxIOUThreshold;
     std::vector<std::pair<size_t, size_t>> grids;
