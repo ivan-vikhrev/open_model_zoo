@@ -10,8 +10,8 @@ namespace {
 constexpr size_t ndetections = 200;
 }  // namespace
 
-BaseDetection::BaseDetection(const std::string &pathToModel, bool doRawOutputMessages)
-    : pathToModel(pathToModel), doRawOutputMessages(doRawOutputMessages) {
+BaseDetection::BaseDetection(const std::string &pathToModel, bool doRawOutputMessages, int nthreads, std::string nstreams, int nireq)
+    : pathToModel(pathToModel), doRawOutputMessages(doRawOutputMessages), nthreads(nthreads), nstreams(nstreams), nireq(nireq) {
 }
 
 bool BaseDetection::enabled() const  {
@@ -20,8 +20,9 @@ bool BaseDetection::enabled() const  {
 
 FaceDetection::FaceDetection(const std::string &pathToModel,
                              double detectionThreshold, bool doRawOutputMessages,
-                             float bb_enlarge_coefficient, float bb_dx_coefficient, float bb_dy_coefficient)
-    : BaseDetection(pathToModel, doRawOutputMessages),
+                             float bb_enlarge_coefficient, float bb_dx_coefficient, float bb_dy_coefficient,
+                             int nthreads,std::string nstreams, int nireq)
+    : BaseDetection(pathToModel, doRawOutputMessages, nthreads, nstreams, nireq),
       detectionThreshold(detectionThreshold),
       objectSize(0), width(0), height(0),
       model_input_width(0), model_input_height(0),
@@ -512,7 +513,7 @@ Load::Load(BaseDetection& detector) : detector(detector) {
 
 void Load::into(ov::Core& core, const std::string & deviceName) const {
     if (!detector.pathToModel.empty()) {
-        auto config = ConfigFactory::getUserConfig("CPU", 8, "8", 8);
+        auto config = ConfigFactory::getUserConfig("CPU", detector.nireq, detector.nstreams, detector.nthreads);
         ov::CompiledModel cml = core.compile_model(detector.read(core), config.deviceName, config.compiledModelConfig);
         logCompiledModelInfo(cml, detector.pathToModel, deviceName);
         detector.request = cml.create_infer_request();

@@ -15,7 +15,11 @@ struct BaseDetection {
     ov::Shape inShape;
     const bool doRawOutputMessages;
 
-    BaseDetection(const std::string &pathToModel, bool doRawOutputMessages);
+    int nthreads;
+    std::string nstreams;
+    int nireq;
+
+    BaseDetection(const std::string &pathToModel, bool doRawOutputMessages, int nthreads = 0, std::string nstreams = "", int nireq = 0);
     virtual ~BaseDetection() = default;
     virtual std::shared_ptr<ov::Model> read(const ov::Core& core) = 0;
     bool enabled() const;
@@ -43,7 +47,10 @@ struct FaceDetection : BaseDetection {
     FaceDetection(const std::string &pathToModel,
                   double detectionThreshold, bool doRawOutputMessages,
                   float bb_enlarge_coefficient, float bb_dx_coefficient,
-                  float bb_dy_coefficient);
+                  float bb_dy_coefficient,
+                  int nthreads = 0,
+                  std::string nstreams = "",
+                  int nireq = 0);
 
     std::shared_ptr<ov::Model> read(const ov::Core& core) override;
     void submitRequest(const cv::Mat &frame);

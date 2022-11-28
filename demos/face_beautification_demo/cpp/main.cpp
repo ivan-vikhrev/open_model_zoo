@@ -85,6 +85,17 @@ constexpr char u_msg[] = "resource utilization graphs. Default is cdm. "
     "c - average CPU load, d - load distribution over cores, m - memory usage, h - hide";
 DEFINE_string(u, "cdm", u_msg);
 
+constexpr char num_threads_message[] = "Optional. Specify count of threads.";
+DEFINE_uint32(nthreads, 0, num_threads_message);
+
+constexpr char num_streams_message[] = "Optional. Specify count of streams.";
+
+DEFINE_string(nstreams, "", num_streams_message);
+
+constexpr char num_inf_req_message[] = "Optional. Number of infer requests.";
+DEFINE_uint32(nireq, 0, num_inf_req_message);
+
+
 void parse(int argc, char *argv[]) {
     gflags::ParseCommandLineFlags(&argc, &argv, false);
     if (FLAGS_h || 1 == argc) {
@@ -106,6 +117,9 @@ void parse(int argc, char *argv[]) {
                   << "\n\t[--mlm <MODEL FILE>]                          " << mlm_msg
                   << "\n\t[ -o <OUTPUT>]                                " << o_msg
                   << "\n\t[ -r]                                         " << r_msg
+                  << "\n\t[--nthreads <integer>]                            " << num_threads_message
+                  << "\n\t[--nstreams] <integer>]                           " << num_streams_message
+                  << "\n\t[--nireq <integer>]                               " << num_inf_req_message
                   << "\n\t[--show] ([--noshow])                         " << show_msg
                   << "\n\t[--show_emotion_bar] ([--noshow_emotion_bar]) " << show_emotion_bar_msg
                   << "\n\t[--smooth] ([--nosmooth])                     " << smooth_msg
@@ -136,7 +150,8 @@ int main(int argc, char *argv[]) {
     ov::Core core;
 
     FaceDetection faceDetector(FLAGS_m, FLAGS_t, FLAGS_r,
-                                static_cast<float>(FLAGS_bb_enlarge_coef), static_cast<float>(FLAGS_dx_coef), static_cast<float>(FLAGS_dy_coef));
+                                static_cast<float>(FLAGS_bb_enlarge_coef), static_cast<float>(FLAGS_dx_coef), static_cast<float>(FLAGS_dy_coef),
+                                FLAGS_nthreads, FLAGS_nstreams, FLAGS_nireq);
     AgeGenderDetection ageGenderDetector(FLAGS_mag, FLAGS_r);
     HeadPoseDetection headPoseDetector(FLAGS_mhp, FLAGS_r);
     EmotionsDetection emotionsDetector(FLAGS_mem, FLAGS_r);
