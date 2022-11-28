@@ -3,6 +3,7 @@
 //
 
 #include "detectors.hpp"
+#include <utils/config_factory.h>
 #include <utils/ocv_common.hpp>
 
 namespace {
@@ -511,7 +512,8 @@ Load::Load(BaseDetection& detector) : detector(detector) {
 
 void Load::into(ov::Core& core, const std::string & deviceName) const {
     if (!detector.pathToModel.empty()) {
-        ov::CompiledModel cml = core.compile_model(detector.read(core), deviceName);
+        auto config = ConfigFactory::getUserConfig("CPU", 8, "8", 8);
+        ov::CompiledModel cml = core.compile_model(detector.read(core), config.deviceName, config.compiledModelConfig);
         logCompiledModelInfo(cml, detector.pathToModel, deviceName);
         detector.request = cml.create_infer_request();
     }
