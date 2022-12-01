@@ -35,7 +35,7 @@ import csv
 import json
 import os
 import shlex
-import subprocess  # nosec - disable B404:import-subprocess check
+import subprocess
 import sys
 import tempfile
 import timeit
@@ -70,7 +70,7 @@ def parse_args():
     parser.add_argument(
         "--config",
         type=Path,
-        default=Path(__file__).parents[1].resolve() / "configs/default_config.yml",
+        default="./configs/default_config.yml",
         help="The config file with test cases",
     )
     parser.add_argument(
@@ -286,7 +286,7 @@ def main():
     suppressed_devices = parse_supported_device_list(args.supported_devices)
 
     # Set up directories
-    omz_dir = (Path(__file__).parents[3]).resolve()
+    omz_dir = (Path(__file__).parent / "../..").resolve()
     demos_dir = omz_dir / "demos"
     auto_tools_dir = omz_dir / "tools/model_tools"
 

@@ -1,4 +1,4 @@
-# config for testing 3 hot-models
+# config for testing 4 hot-models
 demos:
   - name: classification_benchmark_demo
     parameters:

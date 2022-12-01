@@ -31,7 +31,7 @@ pip install -r requirements.in
 
 ## Usage
 
-To start testing you should run the next script `start_tests.py`.
+To start testing you should run the next script `run_tests.py`.
 Running the script with the `-h` option yields the following usage message:
 
 ```
