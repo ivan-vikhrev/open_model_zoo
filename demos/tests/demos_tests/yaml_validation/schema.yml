@@ -42,7 +42,6 @@ properties:
                 - DataDirectoryArg
                 - DataDirectoryOrigFileNamesArg
                 - DataListOfFilesArg
-                - DataPatternArg
                 - image_net_arg
                 - image_retrieval_arg
                 - brats_arg
@@ -74,3 +73,4 @@ properties:
                     type: [string, ModelArg, ModelFileArg, "null"]
 
       required: [name, parameters, cases]
+required: [demos]

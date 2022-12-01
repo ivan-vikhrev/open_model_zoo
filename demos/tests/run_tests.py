@@ -80,13 +80,16 @@ def parse_args():
         "For testing demos of specific implementation pass one (or more) of the next values: cpp, cpp_gapi, python.",
     )
     parser.add_argument(
-        "--scope", default="all", help="Testing demos according to parser name", choices=("all", "basic", "perf")
+        "--parser_type",
+        default="all",
+        help="Testing only demos with specified parser type",
+        choices=("all", "basic", "perf"),
     )
     parser.add_argument("--mo", type=Path, metavar="MO.PY", help="Model Optimizer entry point script")
     parser.add_argument("--devices", default="CPU GPU", help="list of devices to test")
     parser.add_argument("--report-file", type=Path, help="path to report file")
     parser.add_argument("--log-file", type=Path, help="path to log file")
-    parser.add_argument("--parser-path", default="results", type=Path, help="path to directory to write parser results")
+    parser.add_argument("--result-path", default="results", type=Path, help="path to directory to write parser results")
     parser.add_argument(
         "--supported-devices",
         type=parser_paths_list,
@@ -303,10 +306,10 @@ def main():
         for model in models_list:
             model_info[model["name"]] = model
 
-    demos_to_test = get_demos_to_test(DEMOS, args.demos, args.scope)
+    demos_to_test = get_demos_to_test(DEMOS, args.demos, args.parser_type)
 
     # Create needed parsers
-    parsers = get_parsers_from_demos(demos_to_test, args.parser_path)
+    parsers = get_parsers_from_demos(demos_to_test, args.result_path)
 
     with temp_dir_as_path() as global_temp_dir:
         if args.models_dir:

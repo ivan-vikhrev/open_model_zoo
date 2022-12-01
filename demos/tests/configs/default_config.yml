@@ -3,7 +3,7 @@ demos:
   # CPP_GAPI Demos
   - name: background_subtraction_demo
     parameters:
-      implementation: cpp
+      implementation: cpp_gapi
     cases:
       input: !DataPattern instance-segmentation
       no_show: true
@@ -812,10 +812,10 @@ demos:
             name: machine-translation-nar-en-ru-0002
             file_name: tokenizer_tgt
           input: !Vector [
-                            "The quick brown fox jumps over the lazy dog.",
-                            "The five boxing wizards jump quickly.",
-                            "Jackdaws love my big sphinx of quartz.",
-                         ]
+            "The quick brown fox jumps over the lazy dog.",
+            "The five boxing wizards jump quickly.",
+            "Jackdaws love my big sphinx of quartz.",
+          ]
         - model: machine-translation-nar-ru-en-0002
           tokenizer-src: !ModelFile
             name: machine-translation-nar-ru-en-0002
@@ -824,10 +824,10 @@ demos:
             name: machine-translation-nar-ru-en-0002
             file_name: tokenizer_tgt
           input: !Vector [
-                            "В чащах юга жил бы цитрус? Да, но фальшивый экземпляр!",
-                            "Широкая электрификация южных губерний даст мощный толчок подъёму сельского хозяйства.",
-                            "Съешь же ещё этих мягких французских булок да выпей чаю.",
-                         ]
+            "В чащах юга жил бы цитрус? Да, но фальшивый экземпляр!",
+            "Широкая электрификация южных губерний даст мощный толчок подъёму сельского хозяйства.",
+            "Съешь же ещё этих мягких французских булок да выпей чаю.",
+          ]
 
   - name: monodepth_demo
     parameters:
