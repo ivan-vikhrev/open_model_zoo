@@ -59,14 +59,17 @@ optional arguments:
                         directory to use as the cache for the model downloader
   --config CONFIG       The config file with test cases
   --demos DEMO[,DEMO...]
-                        list of demos to run tests for (by default, every demo is tested). For testing demos of specific implementation pass one (or more) of the next values: cpp, cpp_gapi, python.
-  --scope {base,performance,custom}
-                        The scenario for testing demos.
+                        list of demos to run tests for (by default, every demo is tested). For testing demos of specific implementation pass
+                        one (or more) of the next values: cpp, cpp_gapi, python.
+  --parser_type {all,basic,perf}
+                        Testing only demos with specified parser type
   --mo MO.PY            Model Optimizer entry point script
   --devices DEVICES     list of devices to test
   --report-file REPORT_FILE
                         path to report file
   --log-file LOG_FILE   path to log file
+  --result-path RESULT_PATH
+                        path to directory to write parser results
   --supported-devices SUPPORTED_DEVICES [SUPPORTED_DEVICES ...]
                         paths to Markdown files with supported devices for each model
   --precisions PRECISIONS [PRECISIONS ...]
@@ -86,6 +89,7 @@ As you can see, testing system based on config files in `yaml` format. There are
 
 * [default_config](./configs/default_config.yml) - for testing all demos.
 * [hot_models_config](./configs/hot_models_config.yml) - for testing only most important demos and models.
+* [kvadra_demos_config.yml](./configs/kvadra_demos_config.yml) - config for testing demos for KVADRA tablet.
 
 By default, script will use the `default_config`.
 
