@@ -1,0 +1,38 @@
+# config for testing 4 hot-models
+demos:
+  - name: classification_benchmark_demo
+    parameters:
+      implementation: cpp
+      parser_name: perf
+    cases:
+      no_show: true
+      time: 5
+      input: !DataDirectoryOrigFileNames classification
+      labels: !OmzData data/dataset_classes/imagenet_2012.txt
+      model:
+        - resnet-50-pytorch
+        - efficientnet-b0
+
+  - name: object_detection_demo
+    parameters:
+      implementation: python
+      parser_name: perf
+    cases:
+      no_show: true
+      input: !DataPattern object-detection-demo
+      architecture_type: yolov3-onnx
+      model:
+        - yolo-v3-onnx
+        - yolo-v3-tiny-onnx
+
+  - name: object_detection_demo
+    parameters:
+      implementation: cpp
+      parser_name: perf
+    cases:
+      no_show: true
+      input: !DataPattern object-detection-demo
+      architecture_type: yolov3-onnx
+      model:
+        - yolo-v3-onnx
+        - yolo-v3-tiny-onnx

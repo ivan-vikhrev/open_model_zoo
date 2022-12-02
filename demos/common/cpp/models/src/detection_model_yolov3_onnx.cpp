@@ -53,7 +53,7 @@ void ModelYoloV3ONNX::prepareInputsOutputs(std::shared_ptr<ov::Model>& model) {
     }
 
     ov::preprocess::PrePostProcessor ppp(model);
-    inputsNames.reserve(inputs.size());
+    inputsNames.resize(inputs.size());
     for (auto& input : inputs) {
         const ov::Shape& currentShape = input.get_shape();
         std::string currentName = input.get_any_name();
