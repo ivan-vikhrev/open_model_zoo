@@ -85,19 +85,19 @@ demos:
   - name: interactive_face_detection_demo
     parameters:
       implementation: cpp_gapi
-      model_keys: [m, m_ag, m_em, m_lm, m_hp, m_am]
-      device_keys: [d, d_ag, d_em, d_lm, d_hp, d_am]
+      model_keys: [m, mag, mem, mlm, mhp, mam]
+      device_keys: [d, dag, dem, dlm, dhp, dam]
     cases:
       noshow: true
       input: !DataPattern 375x500
       split:
-        - model: face-detection-adas-0001
-        - model: face-detection-retail-0004
-          model_ag: age-gender-recognition-retail-0013
-          model_am: anti-spoof-mn3
-          model_em: emotions-recognition-retail-0003
-          model_hp: head-pose-estimation-adas-0001
-          model_lm: facial-landmarks-35-adas-0002
+        - m: !Model face-detection-adas-0001
+        - m: !Model face-detection-retail-0004
+          mag: !Model age-gender-recognition-retail-0013
+          mam: !Model anti-spoof-mn3
+          mem: !Model emotions-recognition-retail-0003
+          mhp: !Model head-pose-estimation-adas-0001
+          mlm: !Model facial-landmarks-35-adas-0002
 
   # CPP Demos
   - name: classification_benchmark_demo
@@ -198,18 +198,18 @@ demos:
   - name: interactive_face_detection_demo
     parameters:
       implementation: cpp
-      model_keys: [m, m_ag, m_em, m_lm, m_hp, m_am]
+      model_keys: [m, mag, mem, mlm, mhp, mam]
     cases:
       noshow: true
       input: !DataPattern 375x500
       split:
-        - model: face-detection-adas-0001
-        - model: face-detection-retail-0004
-          model_ag: age-gender-recognition-retail-0013
-          model_am: anti-spoof-mn3
-          model_em: emotions-recognition-retail-0003
-          model_hp: head-pose-estimation-adas-0001
-          model_lm: facial-landmarks-35-adas-0002
+        - m: !Model face-detection-adas-0001
+        - m: !Model face-detection-retail-0004
+          mag: !Model age-gender-recognition-retail-0013
+          mam: !Model anti-spoof-mn3
+          mem: !Model emotions-recognition-retail-0003
+          mhp: !Model head-pose-estimation-adas-0001
+          mlm: !Model facial-landmarks-35-adas-0002
 
   - name: mask_rcnn_demo
     parameters:

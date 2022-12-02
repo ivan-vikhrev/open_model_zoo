@@ -75,21 +75,22 @@ Running the demo with `-h` shows this help message:
       -m <MODEL FILE>                             path to an .xml file with a trained Face Detection model
     [ -i <INPUT>]                                 an input to process. The input must be a single image, a folder of images, video file or camera id. Default is 0
     [--bb_enlarge_coef <NUMBER>]                  coefficient to enlarge/reduce the size of the bounding box around the detected face. Default is 1.2
-    [ -d <DEVICE>]                                target device for Face Detection network (the list of available devices is shown below). The demo will look for a suitable plugin for a specified device. Default is CPU
-    [--d_ag <DEVICE>]                             target device for Age/Gender Recognition network (the list of available devices is shown below). The demo will look for a suitable plugin for a specified device. Default is CPU
-    [--d_am <DEVICE>]                             target device for Antispoofing Classification network (the list of available devices is shown below). Use "-d HETERO:<comma-separated_devices_list>" format to specify HETERO plugin. The demo will look for a suitable plugin for a specified device. Default is CPU
-    [--d_em <DEVICE>]                             target device for Emotions Recognition network (the list of available devices is shown below). The demo will look for a suitable plugin for a specified device. Default is CPU
-    [--d_hp <DEVICE>]                             target device for Head Pose Estimation network (the list of available devices is shown below). The demo will look for a suitable plugin for a specified device. Default is CPU
-    [--d_lm <DEVICE>]                             target device for Facial Landmarks Estimation network (the list of available devices is shown below). The demo will look for a suitable plugin for device specified. Default is CPU
+    [ -d <DEVICE>]                                specify a device to infer on (the list of available devices is shown below). Use '-d HETERO:<comma-separated_devices_list>' format to specify HETERO plugin. Use '-d MULTI:<comma-separated_devices_list>' format to specify MULTI plugin. Default is CPU
+    [--dag <DEVICE>]                              target device for Age/Gender Recognition network (the list of available devices is shown below). The demo will look for a suitable plugin for a specified device. Default is CPU
+    [--dam <DEVICE>]                              target device for Antispoofing Classification network (the list of available devices is shown below). Use \"-d HETERO:<comma-separated_devices_list>\" format to specify HETERO plugin. The demo will look for a suitable plugin for a specified device. Default is CPU
+    [--dem <DEVICE>]                              target device for Emotions Recognition network (the list of available devices is shown below). The demo will look for a suitable plugin for a specified device. Default is CPU
+    [--dhp <DEVICE>]                              target device for Head Pose Estimation network (the list of available devices is shown below). The demo will look for a suitable plugin for a specified device. Default is CPU
+    [--dlm <DEVICE>]                              target device for Facial Landmarks Estimation network (the list of available devices is shown below). The demo will look for a suitable plugin for device specified. Default is CPU
     [--dx_coef <NUMBER>]                          coefficient to shift the bounding box around the detected face along the Ox axis
     [--dy_coef <NUMBER>]                          coefficient to shift the bounding box around the detected face along the Oy axis
+    [--fps <NUMBER>]                              maximum FPS for playing video
     [--lim <NUMBER>]                              number of frames to store in output. If 0 is set, all frames are stored. Default is 1000
-    [--loop]                                      enable playing video on a loop
-    [--m_ag <MODEL FILE>]                         path to an .xml file with a trained Age/Gender Recognition model
-    [--m_am <MODEL FILE>]                         path to an .xml file with a trained Antispoofing Classification model
-    [--m_em <MODEL FILE>]                         path to an .xml file with a trained Emotions Recognition model
-    [--m_hp <MODEL FILE>]                         path to an .xml file with a trained Head Pose Estimation model
-    [--m_lm <MODEL FILE>]                         path to an .xml file with a trained Facial Landmarks Estimation model
+    [--loop]                                      enable reading the input in a loop
+    [--mag <MODEL FILE>]                          path to an .xml file with a trained Age/Gender Recognition model
+    [--mam <MODEL FILE>]                          path to an .xml file with a trained Antispoofing Classification model
+    [--mem <MODEL FILE>]                          path to an .xml file with a trained Emotions Recognition model
+    [--mhp <MODEL FILE>]                          path to an .xml file with a trained Head Pose Estimation model
+    [--mlm <MODEL FILE>]                          path to an .xml file with a trained Facial Landmarks Estimation model
     [ -o <OUTPUT>]                                name of the output file(s) to save
     [ -r]                                         output inference results as raw values
     [--show] ([--noshow])                         (don't) show output
