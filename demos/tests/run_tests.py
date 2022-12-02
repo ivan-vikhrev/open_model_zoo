@@ -35,7 +35,7 @@ import csv
 import json
 import os
 import shlex
-import subprocess
+import subprocess  # nosec - disable B404:import-subprocess check
 import sys
 import tempfile
 import timeit
@@ -148,8 +148,8 @@ def prepare_models(auto_tools_dir, downloader_cache_dir, mo_path, global_temp_di
     complete_models_lst_path.write_text("".join(model + "\n" for model in model_names))
 
     print("Retrieving models...", flush=True)
-    print("    List of {} models for downloading: ".format(len(model_names)), model_names)
-    print("    Downloader dist folder: {}".format(dl_dir))
+    print("\tList of {} models for downloading: ".format(len(model_names)), model_names)
+    print("\tDownloader dist folder: {}".format(dl_dir))
 
     try:
         subprocess.check_output(
@@ -260,7 +260,7 @@ def get_demos_to_test(demos_from_config, demos_from_args, parser_key):
             print(
                 f"Command line argument '--demos {demos_from_args}' was passed, check that you've specified correct value from the list below:"
             )
-            print(*(Demo.providers + [demo.subdirectory for demo in demos_from_config]), sep=",")
+            print(*(list(Demo.providers) + [demo.subdirectory for demo in demos_from_config]), sep=",")
         raise RuntimeError("Not found demos to test!")
 
     print(f"{len(demos_to_test)} demos will be tested:")

@@ -19,7 +19,8 @@ pip install openvino-dev
 
 **3. Framework requirements**
 
-Install requirements according to source framework for tested models. So script use `omz_downloader` and `omz_converter` tools. For more information please see [OMZ Tools](../../tools/model_tools/README.md).
+Install requirements according to source framework for tested models.
+Script uses `omz_downloader` and `omz_converter` tools. For more information about them refere to [OMZ Tools](../../tools/model_tools/README.md).
 
 **4. Test requirements**
 
@@ -35,8 +36,10 @@ To start testing you should run the next script `run_tests.py`.
 Running the script with the `-h` option yields the following usage message:
 
 ```
-usage: run_tests.py [-h] --demo-build-dir DIR --test-data-dir DIR --downloader-cache-dir DIR [--config CONFIG] [--demos DEMO[,DEMO...]] [--scope {base,performance,custom}] [--mo MO.PY] [--devices DEVICES]
-                    [--report-file REPORT_FILE] [--log-file LOG_FILE] [--supported-devices SUPPORTED_DEVICES [SUPPORTED_DEVICES ...]] [--precisions PRECISIONS [PRECISIONS ...]] [--models-dir DIR]
+usage: run_tests.py [-h] --demo-build-dir DIR --test-data-dir DIR --downloader-cache-dir DIR [--config CONFIG] [--demos DEMO[,DEMO...]]
+                    [--parser_type {all,basic,perf}] [--mo MO.PY] [--devices DEVICES] [--report-file REPORT_FILE] [--log-file LOG_FILE]
+                    [--result-path RESULT_PATH] [--supported-devices SUPPORTED_DEVICES [SUPPORTED_DEVICES ...]]
+                    [--precisions PRECISIONS [PRECISIONS ...]] [--models-dir DIR]
 
 Test script for the demos.
 
@@ -85,10 +88,10 @@ python3 start_tests.py --demo-build-dir <path_to_binaries> \
                        --downloader-cache-dir <path_to_cashe_folder>
 ```
 
-As you can see, testing system based on config files in `yaml` format. There are prepared configs:
+Testing system based on config files in `yaml` format. Currently we have next configs:
 
 * [default_config](./configs/default_config.yml) - for testing all demos.
-* [hot_models_config](./configs/hot_models_config.yml) - for testing only most important demos and models.
+* [hot_models_config](./configs/hot_models_config.yml) - for testing only relevant demos and models.
 * [kvadra_demos_config.yml](./configs/kvadra_demos_config.yml) - config for testing demos for KVADRA tablet.
 
 By default, script will use the `default_config`.
@@ -106,7 +109,7 @@ For any demo, which user want to test, he should specify the next sections:
 Let's consider each section separately:
 1. `name` section. User can test any demo applications from OMZ `demos` directory. To get more information about demos please see [DEMOS](..).
 2. `parameters` section. For this section user shoud type the next parameters:
-   * `implementation` - possible values are `cpp` and `python`. Parameter is required.
+   * `implementation` - possible values are `cpp`, `cpp_gapi` and `python`. Required parameter.
    * `model_keys` - model keys from demo options. Optional parameter, `-m` flag for single model demos is used by default.
    * `device_keys` - device keys from demo options. Optional parameter, `-d` flag is used as default.
    * `parser_name` - parser for output of tested demos. Optional parameter, `basic` parser is used by default. All possible parsers:
@@ -145,7 +148,7 @@ Let's consider each section separately:
    TestCase(options={'-m': <args.ModelArg object at 0x7f6a70518970>, '-at': 'ae', '-no_show': True, '-i': <args.DataPatternArg object at 0x7f6a70584580>}, extra_models=[])
    ```
 
-   What about custom types for `input` and `model` options, there are next alternatives:
+    Available value types for `input` and `model` options:
 
    For `input` flag:
    * `string` type - scpecify path to image or folder of images directly.
