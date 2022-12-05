@@ -91,7 +91,8 @@ def main():
         *(openvino_dir / f'tools/requirements_{suffix}.txt'
             for suffix in ['caffe', 'mxnet', 'onnx', 'tensorflow2']))
     pc('ci/requirements-demos.txt',
-        'demos/requirements.txt', openvino_dir / 'tools/requirements.txt')
+        'demos/requirements.txt', openvino_dir / 'tools/requirements.txt',
+        'demos/tests/requirements.in')
     pc('ci/requirements-downloader.txt',
         'tools/model_tools/requirements.in')
     pc('ci/requirements-quantization.txt',
