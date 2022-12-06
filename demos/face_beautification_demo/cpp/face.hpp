@@ -14,6 +14,7 @@
 #include "detectors.hpp"
 
 // -------------------------Describe detected face on a frame-------------------------------------------------
+using Contour   = std::vector<cv::Point>;
 
 struct Face {
 public:
@@ -21,33 +22,11 @@ public:
 
     explicit Face(size_t id, cv::Rect& location);
 
-    void updateAge(float value);
-    void updateGender(float value);
-    void updateEmotions(std::map<std::string, float> values);
-    void updateHeadPose(HeadPoseDetection::Results values);
     void updateLandmarks(std::vector<float> values);
-    void updateRealFaceConfidence(float value);
-
-    int getAge();
-    bool isMale();
-    bool isReal();
-    std::map<std::string, float> getEmotions();
-    std::pair<std::string, float> getMainEmotion();
-    HeadPoseDetection::Results getHeadPose();
+    const std::vector<Contour> getFaceContour();
+    const std::vector<Contour> getFaceElemsContours();
     const std::vector<float>& getLandmarks();
     size_t getId();
-
-    void ageGenderEnable(bool value);
-    void emotionsEnable(bool value);
-    void headPoseEnable(bool value);
-    void landmarksEnable(bool value);
-    void antispoofingEnable(bool value);
-
-    bool isAgeGenderEnabled();
-    bool isEmotionsEnabled();
-    bool isHeadPoseEnabled();
-    bool isLandmarksEnabled();
-    bool isAntispoofingEnabled();
 
 public:
     cv::Rect _location;
@@ -55,19 +34,9 @@ public:
 
 private:
     size_t _id;
-    float _age;
-    float _maleScore;
-    float _femaleScore;
-    std::map<std::string, float> _emotions;
-    HeadPoseDetection::Results _headPose;
     std::vector<float> _landmarks;
-    float _realFaceConfidence;
+    Contour cntFace, cntLeftEye, cntRightEye, cntNose, cntMouth;
 
-    bool _isAgeGenderEnabled;
-    bool _isEmotionsEnabled;
-    bool _isHeadPoseEnabled;
-    bool _isLandmarksEnabled;
-    bool _isAntispoofingEnabled;
 };
 
 // ----------------------------------- Utils -----------------------------------------------------------------

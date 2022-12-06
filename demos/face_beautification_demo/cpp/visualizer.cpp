@@ -188,93 +188,32 @@ void Visualizer::enableEmotionBar(std::vector<std::string> const& emotionNames) 
 }
 
 void Visualizer::drawFace(cv::Mat& img, Face::Ptr f, bool drawEmotionBar) {
-    auto genderColor = (f->isAgeGenderEnabled()) ?
-        ((f->isMale()) ? cv::Scalar(255, 0, 0) :
-            cv::Scalar(147, 20, 255)) :
-            cv::Scalar(192, 192, 192);
+    auto genderColor = cv::Scalar(192, 192, 192);
 
     std::ostringstream out;
-    if (f->isAgeGenderEnabled()) {
-        out << (f->isMale() ? "Male" : "Female");
-        out << "," << f->getAge();
-    }
-
-    if (f->isAntispoofingEnabled()) {
-        out << (f->isReal() ? ",real" : ",spoof");
-    }
-
-    if (f->isEmotionsEnabled()) {
-        auto emotion = f->getMainEmotion();
-        out << "," << emotion.first;
-    }
 
     auto textPos = cv::Point2f(static_cast<float>(f->_location.x), static_cast<float>(f->_location.y - 20));
     putHighlightedText(img, out.str(), textPos, cv::FONT_HERSHEY_COMPLEX_SMALL, 1.5, genderColor, 2);
 
-    if (f->isHeadPoseEnabled()) {
-        cv::Point3f center(static_cast<float>(f->_location.x + f->_location.width / 2),
-                           static_cast<float>(f->_location.y + f->_location.height / 2),
-                           0.0f);
-        headPoseVisualizer->draw(img, center, f->getHeadPose());
+    auto& normed_landmarks = f->getLandmarks();
+    size_t n_lm = normed_landmarks.size();
+    for (size_t i_lm = 0UL; i_lm < n_lm / 2; ++i_lm) {
+        float normed_x = normed_landmarks[2 * i_lm];
+        float normed_y = normed_landmarks[2 * i_lm + 1];
+
+        int x_lm = f->_location.x + static_cast<int>(f->_location.width * normed_x);
+        int y_lm = f->_location.y + static_cast<int>(f->_location.height * normed_y);
+        cv::circle(img, cv::Point(x_lm, y_lm), 1 + static_cast<int>(0.012 * f->_location.width), cv::Scalar(0, 255, 255), -1);
     }
 
-    if (f->isLandmarksEnabled()) {
-        auto& normed_landmarks = f->getLandmarks();
-        size_t n_lm = normed_landmarks.size();
-        for (size_t i_lm = 0UL; i_lm < n_lm / 2; ++i_lm) {
-            float normed_x = normed_landmarks[2 * i_lm];
-            float normed_y = normed_landmarks[2 * i_lm + 1];
-
-            int x_lm = f->_location.x + static_cast<int>(f->_location.width * normed_x);
-            int y_lm = f->_location.y + static_cast<int>(f->_location.height * normed_y);
-            cv::circle(img, cv::Point(x_lm, y_lm), 1 + static_cast<int>(0.012 * f->_location.width), cv::Scalar(0, 255, 255), -1);
-        }
+    if (true) {//drawContours) {
+        const auto faceContours = f->getFaceContour();
+        const auto faceElemsContours = f->getFaceElemsContours();
+        cv::polylines(img, faceContours, true, (47,173,255));
+        cv::polylines(img, faceElemsContours, true, (47,173,255));
     }
-
-    // if (drawContours) {
-    //     cv::vector<cv::Point> face_contour;
-    //     auto& normed_landmarks = f->getLandmarks();
-    //     size_t n_lm = normed_landmarks.size();
-    //     for (size_t i_lm = 0UL; i_lm < n_lm / 2; ++i_lm) {
-    //         float normed_x = normed_landmarks[2 * i_lm];
-    //         float normed_y = normed_landmarks[2 * i_lm + 1];
-
-    //         int x_lm = f->_location.x + static_cast<int>(f->_location.width * normed_x);
-    //         int y_lm = f->_location.y + static_cast<int>(f->_location.height * normed_y);
-    //         cv::circle(img, cv::Point(x_lm, y_lm), 1 + static_cast<int>(0.012 * f->_location.width), cv::Scalar(0, 255, 255), -1);
-    //     }
-    // }
 
     photoFrameVisualizer->draw(img, f->_location, genderColor);
-
-    if (drawEmotionBar) {
-        DrawParams& dp = drawParams[f->getId()];
-        cv::Point org(dp.cell.x * xstep + leftPadding, imgSize.height - dp.cell.y * ystep - emotionBarSize.height - bottomPadding);
-
-        emotionVisualizer->draw(img, f->getEmotions(), org, cv::Scalar(255, 255, 255), genderColor);
-
-        auto getCorner = [](cv::Rect r, AnchorType anchor) -> cv::Point {
-            cv::Point p;
-            if (anchor == AnchorType::TL) {
-                p = r.tl();
-            } else if (anchor == AnchorType::TR) {
-                p.x = r.x + r.width - 1;
-                p.y = r.y;
-            } else if (anchor == AnchorType::BL) {
-                p.x = r.x;
-                p.y = r.y + r.height - 1;
-            } else {
-                p.x = r.x + r.width - 1;
-                p.y = r.y + r.height - 1;
-            }
-
-            return p;
-        };
-
-        cv::Point p0 = getCorner(cv::Rect(org, emotionBarSize), dp.barAnchor);
-        cv::Point p1 = getCorner(f->_location, dp.rectAnchor);
-        cv::line(img, p0, p1, genderColor);
-    }
 }
 
 cv::Point Visualizer::findCellForEmotionBar() {

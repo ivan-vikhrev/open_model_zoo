@@ -48,18 +48,6 @@ DEFINE_uint32(lim, 1000, lim_msg);
 constexpr char loop_msg[] = "enable reading the input in a loop";
 DEFINE_bool(loop, false, loop_msg);
 
-constexpr char mag_msg[] = "path to an .xml file with a trained Age/Gender Recognition model";
-DEFINE_string(mag, "", mag_msg);
-
-constexpr char mam_msg[] = "path to an .xml file with a trained Antispoofing Classification model";
-DEFINE_string(mam, "", mam_msg);
-
-constexpr char mem_msg[] = "path to an .xml file with a trained Emotions Recognition model";
-DEFINE_string(mem, "", mem_msg);
-
-constexpr char mhp_msg[] = "path to an .xml file with a trained Head Pose Estimation model";
-DEFINE_string(mhp, "", mhp_msg);
-
 constexpr char mlm_msg[] = "path to an .xml file with a trained Facial Landmarks Estimation model";
 DEFINE_string(mlm, "", mlm_msg);
 
@@ -71,12 +59,6 @@ DEFINE_bool(r, false, r_msg);
 
 constexpr char show_msg[] = "(don't) show output";
 DEFINE_bool(show, true, show_msg);
-
-constexpr char show_emotion_bar_msg[] = "(don't) show emotion bar";
-DEFINE_bool(show_emotion_bar, true, show_emotion_bar_msg);
-
-constexpr char smooth_msg[] = "(don't) smooth person attributes";
-DEFINE_bool(smooth, true, smooth_msg);
 
 constexpr char t_msg[] = "probability threshold for detections. Default is 0.5";
 DEFINE_double(t, 0.5, t_msg);
@@ -110,10 +92,6 @@ void parse(int argc, char *argv[]) {
                   << "\n\t[--fps <NUMBER>]                              " << fps_msg
                   << "\n\t[--lim <NUMBER>]                              " << lim_msg
                   << "\n\t[--loop]                                      " << loop_msg
-                  << "\n\t[--mag <MODEL FILE>]                          " << mag_msg
-                  << "\n\t[--mam <MODEL FILE>]                          " << mam_msg
-                  << "\n\t[--mem <MODEL FILE>]                          " << mem_msg
-                  << "\n\t[--mhp <MODEL FILE>]                          " << mhp_msg
                   << "\n\t[--mlm <MODEL FILE>]                          " << mlm_msg
                   << "\n\t[ -o <OUTPUT>]                                " << o_msg
                   << "\n\t[ -r]                                         " << r_msg
@@ -121,8 +99,6 @@ void parse(int argc, char *argv[]) {
                   << "\n\t[--nstreams] <integer>]                           " << num_streams_message
                   << "\n\t[--nireq <integer>]                               " << num_inf_req_message
                   << "\n\t[--show] ([--noshow])                         " << show_msg
-                  << "\n\t[--show_emotion_bar] ([--noshow_emotion_bar]) " << show_emotion_bar_msg
-                  << "\n\t[--smooth] ([--nosmooth])                     " << smooth_msg
                   << "\n\t[ -t <NUMBER>]                                " << t_msg
                   << "\n\t[ -u <DEVICE>]                                " << u_msg
                   << "\n\tKey bindings:"
@@ -152,20 +128,12 @@ int main(int argc, char *argv[]) {
     FaceDetection faceDetector(FLAGS_m, FLAGS_t, FLAGS_r,
                                 static_cast<float>(FLAGS_bb_enlarge_coef), static_cast<float>(FLAGS_dx_coef), static_cast<float>(FLAGS_dy_coef),
                                 FLAGS_nthreads, FLAGS_nstreams, FLAGS_nireq);
-    AgeGenderDetection ageGenderDetector(FLAGS_mag, FLAGS_r);
-    HeadPoseDetection headPoseDetector(FLAGS_mhp, FLAGS_r);
-    EmotionsDetection emotionsDetector(FLAGS_mem, FLAGS_r);
     FacialLandmarksDetection facialLandmarksDetector(FLAGS_mlm, FLAGS_r);
-    AntispoofingClassifier antispoofingClassifier(FLAGS_mam, FLAGS_r);
     // ---------------------------------------------------------------------------------------------------
 
     // --------------------------- 2. Reading IR models and loading them to plugins ----------------------
     Load(faceDetector).into(core, FLAGS_d);
-    Load(ageGenderDetector).into(core, FLAGS_d);
-    Load(headPoseDetector).into(core, FLAGS_d);
-    Load(emotionsDetector).into(core, FLAGS_d);
     Load(facialLandmarksDetector).into(core, FLAGS_d);
-    Load(antispoofingClassifier).into(core, FLAGS_d);
     // ----------------------------------------------------------------------------------------------------
 
     Timer timer;
@@ -186,9 +154,6 @@ int main(int argc, char *argv[]) {
     Presenter presenter(FLAGS_u, 60, {frame.cols / 4, 60});
 
     Visualizer visualizer{frame.size()};
-    if (FLAGS_show_emotion_bar && emotionsDetector.enabled()) {
-        visualizer.enableEmotionBar(emotionsDetector.emotionsVec);
-    }
 
     LazyVideoWriter videoWriter{FLAGS_o, FLAGS_fps > 0.0 ? FLAGS_fps : cap->fps(), FLAGS_lim};
 
@@ -220,19 +185,11 @@ int main(int argc, char *argv[]) {
         for (auto &&face : prev_detection_results) {
             cv::Rect clippedRect = face.location & cv::Rect({0, 0}, prevFrame.size());
             const cv::Mat& crop = prevFrame(clippedRect);
-            ageGenderDetector.enqueue(crop);
-            headPoseDetector.enqueue(crop);
-            emotionsDetector.enqueue(crop);
             facialLandmarksDetector.enqueue(crop);
-            antispoofingClassifier.enqueue(crop);
         }
 
-        // Running Age/Gender Recognition, Head Pose Estimation, Emotions Recognition, Facial Landmarks Estimation and Antispoofing Classifier networks simultaneously
-        ageGenderDetector.submitRequest();
-        headPoseDetector.submitRequest();
-        emotionsDetector.submitRequest();
+        // Running Facial Landmarks Estimation networks simultaneously
         facialLandmarksDetector.submitRequest();
-        antispoofingClassifier.submitRequest();
 
         // Read the next frame while waiting for inference results
         startTimeNextFrame = std::chrono::steady_clock::now();
@@ -240,10 +197,6 @@ int main(int argc, char *argv[]) {
 
         //  Postprocessing
         std::list<Face::Ptr> prev_faces;
-
-        if (!FLAGS_smooth) {
-            prev_faces.insert(prev_faces.begin(), faces.begin(), faces.end());
-        }
 
         faces.clear();
 
@@ -253,49 +206,25 @@ int main(int argc, char *argv[]) {
             cv::Rect rect = result.location & cv::Rect({0, 0}, prevFrame.size());
 
             Face::Ptr face;
-            if (FLAGS_smooth) {
-                face = matchFace(rect, prev_faces);
-                float intensity_mean = calcMean(prevFrame(rect));
+            // if (FLAGS_smooth) {
+            //     face = matchFace(rect, prev_faces);
+            //     float intensity_mean = calcMean(prevFrame(rect));
 
-                if ((face == nullptr) ||
-                    ((std::abs(intensity_mean - face->_intensity_mean) / face->_intensity_mean) > 0.07f)) {
-                    face = std::make_shared<Face>(id++, rect);
-                } else {
-                    prev_faces.remove(face);
-                }
+            //     if ((face == nullptr) ||
+            //         ((std::abs(intensity_mean - face->_intensity_mean) / face->_intensity_mean) > 0.07f)) {
+            //         face = std::make_shared<Face>(id++, rect);
+            //     } else {
+            //         prev_faces.remove(face);
+            //     }
 
-                face->_intensity_mean = intensity_mean;
-                face->_location = rect;
-            } else {
-                face = std::make_shared<Face>(id++, rect);
-            }
-
-            face->ageGenderEnable(ageGenderDetector.enabled());
-            if (face->isAgeGenderEnabled()) {
-                AgeGenderDetection::Result ageGenderResult = ageGenderDetector[i];
-                face->updateGender(ageGenderResult.maleProb);
-                face->updateAge(ageGenderResult.age);
-            }
-
-            face->emotionsEnable(emotionsDetector.enabled());
-            if (face->isEmotionsEnabled()) {
-                face->updateEmotions(emotionsDetector[i]);
-            }
-
-            face->headPoseEnable(headPoseDetector.enabled());
-            if (face->isHeadPoseEnabled()) {
-                face->updateHeadPose(headPoseDetector[i]);
-            }
-
-            face->landmarksEnable(facialLandmarksDetector.enabled());
-            if (face->isLandmarksEnabled()) {
-                face->updateLandmarks(facialLandmarksDetector[i]);
-            }
-
-            face->antispoofingEnable(antispoofingClassifier.enabled());
-            if (face->isAntispoofingEnabled()) {
-                face->updateRealFaceConfidence(antispoofingClassifier[i]);
-            }
+            //     face->_intensity_mean = intensity_mean;
+            //     face->_location = rect;
+            // } else {
+            //     face = std::make_shared<Face>(id++, rect);
+            // }
+            face = std::make_shared<Face>(id++, rect);
+            // face->landmarksEnable(facialLandmarksDetector.enabled());
+            face->updateLandmarks(facialLandmarksDetector[i]);
 
             faces.push_back(face);
         }
