@@ -8,7 +8,7 @@
 
 namespace {
 constexpr size_t ndetections = 200;
-constexpr size_t batchSize = 8;
+constexpr size_t batchSize = 1;
 }  // namespace
 
 BaseDetection::BaseDetection(const std::string &pathToModel, bool doRawOutputMessages, int nthreads, std::string nstreams, int nireq)
