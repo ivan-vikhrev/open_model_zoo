@@ -8,6 +8,7 @@
 
 namespace {
 constexpr size_t ndetections = 200;
+constexpr size_t batchSize = 8;
 }  // namespace
 
 BaseDetection::BaseDetection(const std::string &pathToModel, bool doRawOutputMessages, int nthreads, std::string nstreams, int nireq)
@@ -187,252 +188,6 @@ std::vector<FaceDetection::Result> FaceDetection::fetchResults() {
     return results;
 }
 
-AntispoofingClassifier::AntispoofingClassifier(const std::string& pathToModel, bool doRawOutputMessages)
-    : BaseDetection(pathToModel, doRawOutputMessages),
-    enquedFaces(0) {
-}
-
-void AntispoofingClassifier::submitRequest() {
-    if (!enquedFaces)
-        return;
-    request.set_input_tensor(ov::Tensor{request.get_input_tensor(), {0, 0, 0, 0}, {enquedFaces, inShape[1], inShape[2], inShape[3]}});
-    request.start_async();
-    enquedFaces = 0;
-}
-
-void AntispoofingClassifier::enqueue(const cv::Mat& face) {
-    if (!enabled()) {
-        return;
-    }
-    ov::Tensor batch = request.get_input_tensor();
-    batch.set_shape(inShape);
-    resize2tensor(face, ov::Tensor{batch, {enquedFaces, 0, 0, 0}, {enquedFaces + 1, inShape[1], inShape[2], inShape[3]}});
-    enquedFaces++;
-}
-
-float AntispoofingClassifier::operator[](int idx) {
-    request.wait();
-    float r = request.get_output_tensor().data<float>()[2 * idx] * 100;
-    if (doRawOutputMessages) {
-        slog::debug << "[" << idx << "] element, real face probability = " << r << slog::endl;
-    }
-
-    return r;
-}
-
-std::shared_ptr<ov::Model> AntispoofingClassifier::read(const ov::Core& core) {
-    slog::info << "Reading model: " << pathToModel << slog::endl;
-    std::shared_ptr<ov::Model> model = core.read_model(pathToModel);
-    logBasicModelInfo(model);
-
-    ov::preprocess::PrePostProcessor ppp(model);
-    ppp.input().tensor().
-        set_element_type(ov::element::u8).
-        set_layout("NHWC");
-    ppp.input().preprocess().convert_layout("NCHW");
-    ppp.output().tensor().set_element_type(ov::element::f32);
-    model = ppp.build();
-    inShape = model->input().get_shape();
-    inShape[0] = ndetections;
-    ov::set_batch(model, {1, int64_t(ndetections)});
-    return model;
-}
-
-AgeGenderDetection::AgeGenderDetection(const std::string &pathToModel,
-                                       bool doRawOutputMessages)
-    : BaseDetection(pathToModel, doRawOutputMessages),
-      enquedFaces(0) {
-}
-
-void AgeGenderDetection::submitRequest() {
-    if (!enquedFaces)
-        return;
-    request.set_input_tensor(ov::Tensor{request.get_input_tensor(), {0, 0, 0, 0}, {enquedFaces, inShape[1], inShape[2], inShape[3]}});
-    request.start_async();
-    enquedFaces = 0;
-}
-
-void AgeGenderDetection::enqueue(const cv::Mat &face) {
-    if (!enabled()) {
-        return;
-    }
-    ov::Tensor batch = request.get_input_tensor();
-    batch.set_shape(inShape);
-    resize2tensor(face, ov::Tensor{batch, {enquedFaces, 0, 0, 0}, {enquedFaces + 1, inShape[1], inShape[2], inShape[3]}});
-    enquedFaces++;
-}
-
-AgeGenderDetection::Result AgeGenderDetection::operator[](int idx) {
-    request.wait();
-    AgeGenderDetection::Result r = {request.get_tensor(outputAge).data<float>()[idx] * 100,
-                                    request.get_tensor(outputGender).data<float>()[idx * 2 + 1]};
-    if (doRawOutputMessages) {
-        slog::debug << "[" << idx << "] element, male prob = " << r.maleProb << ", age = " << r.age << slog::endl;
-    }
-
-    return r;
-}
-
-std::shared_ptr<ov::Model> AgeGenderDetection::read(const ov::Core& core) {
-    slog::info << "Reading model: " << pathToModel << slog::endl;
-    std::shared_ptr<ov::Model> model = core.read_model(pathToModel);
-    logBasicModelInfo(model);
-    outputAge = "age_conv3";
-    outputGender = "prob";
-
-    ov::preprocess::PrePostProcessor ppp(model);
-    ppp.input().tensor().
-        set_element_type(ov::element::u8).
-        set_layout("NHWC");
-    ppp.input().preprocess().
-        convert_element_type(ov::element::f32).
-        convert_layout("NCHW");
-    ppp.output(outputAge).tensor().set_element_type(ov::element::f32);
-    ppp.output(outputGender).tensor().set_element_type(ov::element::f32);
-    model = ppp.build();
-    inShape = model->input().get_shape();
-    inShape[0] = ndetections;
-    ov::set_batch(model, {1, int64_t(ndetections)});
-    return model;
-}
-
-
-HeadPoseDetection::HeadPoseDetection(const std::string &pathToModel,
-                                     bool doRawOutputMessages)
-    : BaseDetection(pathToModel, doRawOutputMessages),
-      outputAngleR("angle_r_fc"), outputAngleP("angle_p_fc"), outputAngleY("angle_y_fc"), enquedFaces(0) {
-}
-
-void HeadPoseDetection::submitRequest()  {
-    if (!enquedFaces) return;
-    request.set_input_tensor(ov::Tensor{request.get_input_tensor(), {0, 0, 0, 0}, {enquedFaces, inShape[1], inShape[2], inShape[3]}});
-    request.start_async();
-    enquedFaces = 0;
-}
-
-void HeadPoseDetection::enqueue(const cv::Mat &face) {
-    if (!enabled()) {
-        return;
-    }
-    ov::Tensor batch = request.get_input_tensor();
-    batch.set_shape(inShape);
-    resize2tensor(face, ov::Tensor{batch, {enquedFaces, 0, 0, 0}, {enquedFaces + 1, inShape[1], inShape[2], inShape[3]}});
-    enquedFaces++;
-}
-
-HeadPoseDetection::Results HeadPoseDetection::operator[](int idx) {
-    request.wait();
-    HeadPoseDetection::Results r = {request.get_tensor(outputAngleR).data<float>()[idx],
-                                    request.get_tensor(outputAngleP).data<float>()[idx],
-                                    request.get_tensor(outputAngleY).data<float>()[idx]};
-    if (doRawOutputMessages) {
-        slog::debug << "[" << idx << "] element, yaw = " << r.angle_y <<
-                     ", pitch = " << r.angle_p <<
-                     ", roll = " << r.angle_r << slog::endl;
-    }
-
-    return r;
-}
-
-std::shared_ptr<ov::Model> HeadPoseDetection::read(const ov::Core& core) {
-    slog::info << "Reading model: " << pathToModel << slog::endl;
-    std::shared_ptr<ov::Model> model = core.read_model(pathToModel);
-    logBasicModelInfo(model);
-
-    ov::preprocess::PrePostProcessor ppp(model);
-    ppp.input().tensor().
-        set_element_type(ov::element::u8).
-        set_layout("NHWC");
-    ppp.input().preprocess().convert_layout("NCHW");
-    ppp.output(outputAngleR).tensor().set_element_type(ov::element::f32);
-    ppp.output(outputAngleP).tensor().set_element_type(ov::element::f32);
-    ppp.output(outputAngleY).tensor().set_element_type(ov::element::f32);
-    model = ppp.build();
-    inShape = model->input().get_shape();
-    inShape[0] = ndetections;
-    ov::set_batch(model, {1, int64_t(ndetections)});
-    return model;
-}
-
-EmotionsDetection::EmotionsDetection(const std::string &pathToModel,
-                                     bool doRawOutputMessages)
-              : BaseDetection(pathToModel, doRawOutputMessages),
-                enquedFaces(0) {
-}
-
-void EmotionsDetection::submitRequest() {
-    if (!enquedFaces) return;
-    request.set_input_tensor(ov::Tensor{request.get_input_tensor(), {0, 0, 0, 0}, {enquedFaces, inShape[1], inShape[2], inShape[3]}});
-    request.start_async();
-    enquedFaces = 0;
-}
-
-void EmotionsDetection::enqueue(const cv::Mat &face) {
-    if (!enabled()) {
-        return;
-    }
-    ov::Tensor batch = request.get_input_tensor();
-    batch.set_shape(inShape);
-    resize2tensor(face, ov::Tensor{batch, {enquedFaces, 0, 0, 0}, {enquedFaces + 1, inShape[1], inShape[2], inShape[3]}});
-    enquedFaces++;
-}
-
-std::map<std::string, float> EmotionsDetection::operator[](int idx) {
-    request.wait();
-    const ov::Tensor& tensor = request.get_output_tensor();
-    auto emotionsVecSize = emotionsVec.size();
-    /* emotions vector must have the same size as number of channels
-     * in model output. Default output format is NCHW, so index 1 is checked */
-    size_t numOfChannels = tensor.get_shape().at(1);
-    if (numOfChannels != emotionsVecSize) {
-        throw std::logic_error("Output size (" + std::to_string(numOfChannels) +
-                               ") of the Emotions Recognition network is not equal "
-                               "to used emotions vector size (" +
-                               std::to_string(emotionsVecSize) + ")");
-    }
-    float* emotionsValues = tensor.data<float>();
-    auto outputIdxPos = emotionsValues + idx * emotionsVecSize;
-    std::map<std::string, float> emotions;
-
-    if (doRawOutputMessages) {
-        slog::debug << "[" << idx << "] element, predicted emotions (name = prob):" << slog::endl;
-    }
-
-    for (size_t i = 0; i < emotionsVecSize; i++) {
-        emotions[emotionsVec[i]] = outputIdxPos[i];
-
-        if (doRawOutputMessages) {
-            slog::debug << emotionsVec[i] << " = " << outputIdxPos[i];
-            if (emotionsVecSize - 1 != i) {
-                slog::debug << ", ";
-            } else {
-                slog::debug << slog::endl;
-            }
-        }
-    }
-
-    return emotions;
-}
-
-std::shared_ptr<ov::Model> EmotionsDetection::read(const ov::Core& core) {
-    slog::info << "Reading model: " << pathToModel << slog::endl;
-    std::shared_ptr<ov::Model> model = core.read_model(pathToModel);
-    logBasicModelInfo(model);
-
-    ov::preprocess::PrePostProcessor ppp(model);
-    ppp.input().tensor().
-        set_element_type(ov::element::u8).
-        set_layout("NHWC");
-    ppp.input().preprocess().convert_layout("NCHW");
-    ppp.output().tensor().set_element_type(ov::element::f32);
-    model = ppp.build();
-    inShape = model->input().get_shape();
-    inShape[0] = ndetections;
-    ov::set_batch(model, {1, int64_t(ndetections)});
-    return model;
-}
-
-
 FacialLandmarksDetection::FacialLandmarksDetection(const std::string &pathToModel,
                                                    bool doRawOutputMessages)
     : BaseDetection(pathToModel, doRawOutputMessages), enquedFaces(0) {
@@ -440,7 +195,7 @@ FacialLandmarksDetection::FacialLandmarksDetection(const std::string &pathToMode
 
 void FacialLandmarksDetection::submitRequest() {
     if (!enquedFaces) return;
-    request.set_input_tensor(ov::Tensor{request.get_input_tensor(), {0, 0, 0, 0}, {enquedFaces, inShape[1], inShape[2], inShape[3]}});
+    request.set_input_tensor(ov::Tensor{request.get_input_tensor(), {0, 0, 0, 0}, {batchSize, inShape[1], inShape[2], inShape[3]}});
     request.start_async();
     enquedFaces = 0;
 }
@@ -502,8 +257,8 @@ std::shared_ptr<ov::Model> FacialLandmarksDetection::read(const ov::Core& core) 
     ppp.output().tensor().set_element_type(ov::element::f32);
     model = ppp.build();
     inShape = model->input().get_shape();
-    inShape[0] = ndetections;
-    ov::set_batch(model, {1, int64_t(ndetections)});
+    inShape[0] = batchSize;
+    ov::set_batch(model, batchSize); //{1, int64_t(ndetections)});
     return model;
 }
 

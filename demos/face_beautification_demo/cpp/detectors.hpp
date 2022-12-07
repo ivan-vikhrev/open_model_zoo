@@ -57,63 +57,7 @@ struct FaceDetection : BaseDetection {
     std::vector<Result> fetchResults();
 };
 
-struct AgeGenderDetection : BaseDetection {
-    struct Result {
-        float age;
-        float maleProb;
-    };
 
-    std::string outputAge;
-    std::string outputGender;
-    size_t enquedFaces;
-
-    AgeGenderDetection(const std::string &pathToModel,
-                       bool doRawOutputMessages);
-
-    std::shared_ptr<ov::Model> read(const ov::Core& core) override;
-    void submitRequest();
-
-    void enqueue(const cv::Mat &face);
-    Result operator[](int idx);
-};
-
-struct HeadPoseDetection : BaseDetection {
-    struct Results {
-        float angle_r;
-        float angle_p;
-        float angle_y;
-    };
-
-    std::string outputAngleR;
-    std::string outputAngleP;
-    std::string outputAngleY;
-    size_t enquedFaces;
-    cv::Mat cameraMatrix;
-
-    HeadPoseDetection(const std::string &pathToModel,
-                      bool doRawOutputMessages);
-
-    std::shared_ptr<ov::Model> read(const ov::Core& core) override;
-    void submitRequest();
-
-    void enqueue(const cv::Mat &face);
-    Results operator[](int idx);
-};
-
-struct EmotionsDetection : BaseDetection {
-    size_t enquedFaces;
-
-    EmotionsDetection(const std::string &pathToModel,
-                      bool doRawOutputMessages);
-
-    std::shared_ptr<ov::Model> read(const ov::Core& core) override;
-    void submitRequest();
-
-    void enqueue(const cv::Mat &face);
-    std::map<std::string, float> operator[](int idx);
-
-    const std::vector<std::string> emotionsVec = {"neutral", "happy", "sad", "surprise", "anger"};
-};
 
 struct FacialLandmarksDetection : BaseDetection {
     size_t enquedFaces;
@@ -130,18 +74,6 @@ struct FacialLandmarksDetection : BaseDetection {
     std::vector<float> operator[](int idx);
 };
 
-struct AntispoofingClassifier : BaseDetection {
-    size_t enquedFaces;
-
-    AntispoofingClassifier(const std::string &pathToModel,
-        bool doRawOutputMessages);
-
-    std::shared_ptr<ov::Model> read(const ov::Core& core) override;
-    void submitRequest();
-
-    void enqueue(const cv::Mat& frame);
-    float operator[](int idx);
-};
 
 struct Load {
     BaseDetection& detector;

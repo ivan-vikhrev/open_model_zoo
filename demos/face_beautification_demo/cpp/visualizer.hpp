@@ -15,28 +15,6 @@
 
 // -------------------------Generic routines for visualization of detection results-------------------------------------------------
 
-// Drawing a bar of emotions
-class EmotionBarVisualizer {
-public:
-    using Ptr = std::shared_ptr<EmotionBarVisualizer>;
-
-    explicit EmotionBarVisualizer(std::vector<std::string> const& emotionNames, cv::Size size = cv::Size(300, 140), cv::Size padding = cv::Size(10, 10),
-                              double opacity = 0.6, double textScale = 1, int textThickness = 1);
-
-    void draw(cv::Mat& img, std::map<std::string, float> emotions, cv::Point org, cv::Scalar fgcolor, cv::Scalar bgcolor);
-    cv::Size getSize();
-private:
-    std::vector<std::string> emotionNames;
-    cv::Size size;
-    cv::Size padding;
-    cv::Size textSize;
-    int textBaseline;
-    int ystep;
-    double opacity;
-    double textScale;
-    int textThickness;
-};
-
 // Drawing a photo frame around detected face
 class PhotoFrameVisualizer {
 public:
@@ -52,29 +30,6 @@ private:
     float photoFrameLength;
 };
 
-// Drawing the position of the head
-class HeadPoseVisualizer {
-public:
-    using Ptr = std::shared_ptr<HeadPoseVisualizer>;
-
-    explicit HeadPoseVisualizer(float scale = 50,
-                            cv::Scalar xAxisColor = cv::Scalar(0, 0, 255),
-                            cv::Scalar yAxisColor = cv::Scalar(0, 255, 0),
-                            cv::Scalar zAxisColor = cv::Scalar(255, 0, 0),
-                            int axisThickness = 2);
-
-    void draw(cv::Mat& frame, cv::Point3f cpoint, HeadPoseDetection::Results headPose);
-
-private:
-    void buildCameraMatrix(cv::Mat& cameraMatrix, int cx, int cy, float focalLength);
-
-private:
-    cv::Scalar xAxisColor;
-    cv::Scalar yAxisColor;
-    cv::Scalar zAxisColor;
-    int axisThickness;
-    float scale;
-};
 
 // Drawing detected faces on the frame
 class Visualizer {
