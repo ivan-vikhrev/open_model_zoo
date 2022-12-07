@@ -120,7 +120,7 @@ void parse(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
     std::set_terminate(catcher);
     parse(argc, argv);
-    PerformanceMetrics metrics;
+    PerformanceMetrics metrics, bMetrics, renderMetrics;;
 
     // --------------------------- 1. Loading Inference Engine -----------------------------
     ov::Core core;
@@ -206,35 +206,20 @@ int main(int argc, char *argv[]) {
             cv::Rect rect = result.location & cv::Rect({0, 0}, prevFrame.size());
 
             Face::Ptr face;
-            // if (FLAGS_smooth) {
-            //     face = matchFace(rect, prev_faces);
-            //     float intensity_mean = calcMean(prevFrame(rect));
-
-            //     if ((face == nullptr) ||
-            //         ((std::abs(intensity_mean - face->_intensity_mean) / face->_intensity_mean) > 0.07f)) {
-            //         face = std::make_shared<Face>(id++, rect);
-            //     } else {
-            //         prev_faces.remove(face);
-            //     }
-
-            //     face->_intensity_mean = intensity_mean;
-            //     face->_location = rect;
-            // } else {
-            //     face = std::make_shared<Face>(id++, rect);
-            // }
             face = std::make_shared<Face>(id++, rect);
-            // face->landmarksEnable(facialLandmarksDetector.enabled());
+
             face->updateLandmarks(facialLandmarksDetector[i]);
 
             faces.push_back(face);
         }
 
         // drawing faces
+        auto renderingStart = std::chrono::steady_clock::now();
+        cv::Mat beutifiedImg = visualizer.beautify(prevFrame, faces, bMetrics);
         visualizer.draw(prevFrame, faces);
-
         presenter.drawGraphs(prevFrame);
+        renderMetrics.update(renderingStart);
         metrics.update(startTimePrevFrame, prevFrame, { 10, 22 }, cv::FONT_HERSHEY_COMPLEX, 0.65);
-
         timer.finish("total");
 
         videoWriter.write(prevFrame);
@@ -242,6 +227,7 @@ int main(int argc, char *argv[]) {
         int delay = std::max(1, static_cast<int>(msrate - timer["total"].getLastCallDuration()));
         if (FLAGS_show) {
             cv::imshow(argv[0], prevFrame);
+            cv::imshow("Beautified", beutifiedImg);
             int key = cv::waitKey(delay);
             if ('P' == key || 'p' == key || '0' == key || ' ' == key) {
                 key = cv::waitKey(0);
@@ -255,6 +241,7 @@ int main(int argc, char *argv[]) {
 
     slog::info << "Metrics report:" << slog::endl;
     metrics.logTotal();
+    logLatencyPerStage(0.0, 0.0, 0.0, bMetrics.getTotal().latency, renderMetrics.getTotal().latency);
     slog::info << presenter.reportMeans() << slog::endl;
 
     return 0;

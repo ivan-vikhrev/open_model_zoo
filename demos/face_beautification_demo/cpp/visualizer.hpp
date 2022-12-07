@@ -93,31 +93,17 @@ public:
         size_t frameIdx;
     };
 
-    explicit Visualizer(cv::Size const& imgSize, int leftPadding = 10, int rightPadding = 10, int topPadding = 75, int bottomPadding = 10);
+    explicit Visualizer(cv::Size const& imgSize);
 
-    void enableEmotionBar(std::vector<std::string> const& emotionNames);
+    cv::Mat beautify(cv::Mat img, std::list<Face::Ptr> faces, PerformanceMetrics& m);
     void draw(cv::Mat img, std::list<Face::Ptr> faces);
 
 private:
-    void drawFace(cv::Mat& img, Face::Ptr f, bool drawEmotionBar);
-    cv::Point findCellForEmotionBar();
-
-    std::map<size_t, DrawParams> drawParams;
-    EmotionBarVisualizer::Ptr emotionVisualizer;
+    void drawFace(cv::Mat& img, Face::Ptr f, bool drawContours = true);
+    cv::Mat beautifyFaces(cv::Mat& img, const std::vector<Contour>& facesContours,
+        const std::vector<Contour>& facesElemsContours, PerformanceMetrics& m);
     PhotoFrameVisualizer::Ptr photoFrameVisualizer;
-    HeadPoseVisualizer::Ptr headPoseVisualizer;
-
-    cv::Mat drawMap;
-    int nxcells;
-    int nycells;
-    int xstep;
-    int ystep;
 
     cv::Size imgSize;
-    int leftPadding;
-    int rightPadding;
-    int topPadding;
-    int bottomPadding;
-    cv::Size emotionBarSize;
     size_t frameCounter;
 };
