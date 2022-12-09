@@ -117,7 +117,7 @@ def collect_result(demo_name, device, pipeline, execution_time, report_file):
         testwriter = csv.writer(csvfile, quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
         if first_time:
             testwriter.writerow(["DemoName", "Device", "ModelsInPipeline", "ExecutionTime"])
-        testwriter.writerow([demo_name, device, ' '.join(sorted(pipeline)), execution_time])
+        testwriter.writerow([demo_name, device, " ".join(sorted(pipeline)), execution_time])
 
 
 def write_log(test_log, log_file):
