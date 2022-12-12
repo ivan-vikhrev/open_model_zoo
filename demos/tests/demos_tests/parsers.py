@@ -17,6 +17,7 @@
 Parsers for output od demo processing
 """
 
+import csv
 import re
 from pathlib import Path
 
@@ -76,15 +77,11 @@ class PerformanceParser(Parser):
 
         model_keys = [key for key in test_case.options if key.startswith(("-m", "--m"))]
 
-        if filename.stat().st_size == 0:
-            models_col = [f"Model {key}" for key in model_keys]
-            precisions_col = [f"Precision {key}" for key in model_keys]
-            columns = ",".join(["Device", *precisions_col, *models_col, *result.keys()])
-            with open(filename, "w") as f:
-                print(columns, file=f)
+        with filename.open("a+", newline="") as csvfile:
+            testwriter = csv.writer(csvfile, quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
+            if filename.stat().st_size == 0:
+                testwriter.writerow(["Device", "Precision", "Model", *result.keys()])
 
-        precisions = [test_case.options[key].precision for key in model_keys]
-        models_names = [test_case.options[key].name for key in model_keys]
-        data = ",".join([device, *precisions, *models_names, *result.values()])
-        with filename.open(mode="a") as f:
-            print(data, file=f)
+            precisions = " ; ".join([test_case.options[key].precision for key in model_keys])
+            models_names = " ; ".join([test_case.options[key].name for key in model_keys])
+            testwriter.writerow([device, precisions, models_names, *result.values()])
