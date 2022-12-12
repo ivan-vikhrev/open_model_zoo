@@ -82,6 +82,6 @@ class PerformanceParser(Parser):
             if filename.stat().st_size == 0:
                 testwriter.writerow(["Device", "Precision", "Model", *result.keys()])
 
-            precisions = " ; ".join([test_case.options[key].precision for key in model_keys])
-            models_names = " ; ".join([test_case.options[key].name for key in model_keys])
+            precisions = ";".join([test_case.options[key].precision for key in model_keys])
+            models_names = ";".join([test_case.options[key].name for key in model_keys])
             testwriter.writerow([device, precisions, models_names, *result.values()])

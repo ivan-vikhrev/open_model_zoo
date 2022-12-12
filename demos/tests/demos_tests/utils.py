@@ -107,7 +107,7 @@ def create_test_cases(config: dict, implementation) -> List[TestCase]:
 
 FLAGS_long_short = {"model": "m", "architecture_type": "at", "device": "d"}
 FLAGS_long_short_CPP = {"input": "i", "output": "o"}
-FLAGS_short_keys_PYTHON = ["nireq", "nstreams", "nthreads", "fg"]
+FLAGS_short_keys_PYTHON = ["nireq", "nstreams", "nthreads", "fg", "d"]
 
 
 def correct_demo_flags(flags: dict, implementation: str):
@@ -119,7 +119,7 @@ def correct_demo_flags(flags: dict, implementation: str):
             flag = "-" + flag
         else:
             if implementation == "python":
-                if flag in FLAGS_short_keys_PYTHON:
+                if flag.startswith(tuple(FLAGS_short_keys_PYTHON)):
                     flag = "-" + flag
                 else:
                     flag = "--" + flag
