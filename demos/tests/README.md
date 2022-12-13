@@ -37,7 +37,7 @@ Running the script with the `-h` option yields the following usage message:
 
 ```
 usage: run_tests.py [-h] --demo-build-dir DIR --test-data-dir DIR --downloader-cache-dir DIR [--config CONFIG] [--demos DEMO[,DEMO...]]
-                    [--parser_type {all,basic,perf}] [--mo MO.PY] [--devices DEVICES] [--report-file REPORT_FILE] [--log-file LOG_FILE]
+                    [--parser-type {all,basic,perf}] [--mo MO.PY] [--devices DEVICES] [--report-file REPORT_FILE] [--log-file LOG_FILE]
                     [--result-path RESULT_PATH] [--supported-devices SUPPORTED_DEVICES [SUPPORTED_DEVICES ...]]
                     [--precisions PRECISIONS [PRECISIONS ...]] [--models-dir DIR]
 
@@ -64,7 +64,7 @@ optional arguments:
   --demos DEMO[,DEMO...]
                         list of demos to run tests for (by default, every demo is tested). For testing demos of specific implementation pass
                         one (or more) of the next values: cpp, cpp_gapi, python.
-  --parser_type {all,basic,perf}
+  --parser-type {all,basic,perf}
                         Testing only demos with specified parser type
   --mo MO.PY            Model Optimizer entry point script
   --devices DEVICES     list of devices to test
