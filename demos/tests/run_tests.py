@@ -80,7 +80,7 @@ def parse_args():
         "For testing demos of specific implementation pass one (or more) of the next values: cpp, cpp_gapi, python.",
     )
     parser.add_argument(
-        "--parser_type",
+        "--parser-type",
         default="all",
         help="Testing only demos with specified parser type",
         choices=("all", "basic", "perf"),
