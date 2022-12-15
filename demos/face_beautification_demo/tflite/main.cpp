@@ -187,6 +187,7 @@ int main(int argc, char *argv[]) {
         //     RESIZE_MODE::RESIZE_KEEP_ASPECT_LETTERBOX, cv::INTER_LINEAR);
 
         visualizer.draw(frame, faces);
+        presenter.drawGraphs(frame);
 
         metrics.update(startTime, frame, { 10, 22 }, cv::FONT_HERSHEY_COMPLEX, 0.65);
 
