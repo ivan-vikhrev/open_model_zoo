@@ -22,7 +22,7 @@ public:
 
     explicit PhotoFrameVisualizer(int bbThickness = 1, int photoFrameThickness = 2, float photoFrameLength = 0.1);
 
-    void draw(cv::Mat& img, cv::Rect& bb, cv::Scalar color);
+    void draw(cv::Mat& img, const cv::Rect& bb, cv::Scalar color);
 
 private:
     int bbThickness;
@@ -51,10 +51,10 @@ public:
     explicit Visualizer(cv::Size const& imgSize);
 
     cv::Mat beautify(cv::Mat img, std::list<Face::Ptr> faces, PerformanceMetrics& m);
-    void draw(cv::Mat img, std::list<Face::Ptr> faces);
+    void draw(cv::Mat img, const std::vector<FaceBox>& faces);
 
 private:
-    void drawFace(cv::Mat& img, Face::Ptr f, bool drawContours = true);
+    void drawFace(cv::Mat& img, FaceBox face, bool drawContours = true);
     cv::Mat beautifyFaces(cv::Mat& img, const std::vector<Contour>& facesContours,
         const std::vector<Contour>& facesElemsContours, PerformanceMetrics& m);
     PhotoFrameVisualizer::Ptr photoFrameVisualizer;

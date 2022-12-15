@@ -18,7 +18,7 @@ PhotoFrameVisualizer::PhotoFrameVisualizer(int bbThickness, int photoFrameThickn
     bbThickness(bbThickness), photoFrameThickness(photoFrameThickness), photoFrameLength(photoFrameLength) {
 }
 
-void PhotoFrameVisualizer::draw(cv::Mat& img, cv::Rect& bb, cv::Scalar color) {
+void PhotoFrameVisualizer::draw(cv::Mat& img, const cv::Rect& bb, cv::Scalar color) {
     cv::rectangle(img, bb, color, bbThickness);
 
     auto drawPhotoFrameCorner = [&](cv::Point p, int dx, int dy) {
@@ -40,35 +40,35 @@ Visualizer::Visualizer(cv::Size const& imgSize):
         photoFrameVisualizer(std::make_shared<PhotoFrameVisualizer>()), imgSize(imgSize), frameCounter(0) {}
 
 
-void Visualizer::drawFace(cv::Mat& img, Face::Ptr f, bool drawContours) {
+void Visualizer::drawFace(cv::Mat& img, FaceBox face, bool drawContours) {
 
-    if (drawContours) {
-        const auto faceContours = f->getFaceContour();
-        const auto faceElemsContours = f->getFaceElemsContours();
-        cv::polylines(img, faceContours, true,{47,173,255});
-        cv::polylines(img, faceElemsContours, true, {47,173,255});
-    }
+    // if (drawContours) {
+    //     const auto faceContours = f->getFaceContour();
+    //     const auto faceElemsContours = f->getFaceElemsContours();
+    //     cv::polylines(img, faceContours, true,{47,173,255});
+    //     cv::polylines(img, faceElemsContours, true, {47,173,255});
+    // }
 
     const auto color = cv::Scalar(192, 192, 192);
 
     std::ostringstream out;
 
-    auto textPos = cv::Point2f(static_cast<float>(f->_location.x), static_cast<float>(f->_location.y - 20));
+    auto textPos = cv::Point2f(static_cast<float>(face.left), static_cast<float>(face.top - 20));
     putHighlightedText(img, out.str(), textPos, cv::FONT_HERSHEY_COMPLEX_SMALL, 1.5, color, 2);
 
-    auto& normed_landmarks = f->getLandmarks();
-    size_t n_lm = normed_landmarks.size();
-    for (size_t i_lm = 0UL; i_lm < n_lm / 2; ++i_lm) {
-        float normed_x = normed_landmarks[2 * i_lm];
-        float normed_y = normed_landmarks[2 * i_lm + 1];
+    // auto& normed_landmarks = f->getLandmarks();
+    // size_t n_lm = normed_landmarks.size();
+    // for (size_t i_lm = 0UL; i_lm < n_lm / 2; ++i_lm) {
+    //     float normed_x = normed_landmarks[2 * i_lm];
+    //     float normed_y = normed_landmarks[2 * i_lm + 1];
 
-        int x_lm = f->_location.x + static_cast<int>(f->_location.width * normed_x);
-        int y_lm = f->_location.y + static_cast<int>(f->_location.height * normed_y);
-        cv::circle(img, cv::Point(x_lm, y_lm), 1 + static_cast<int>(0.012 * f->_location.width), cv::Scalar(0, 255, 255), -1);
-    }
+    //     int x_lm = f->_location.x + static_cast<int>(f->_location.width * normed_x);
+    //     int y_lm = f->_location.y + static_cast<int>(f->_location.height * normed_y);
+    //     cv::circle(img, cv::Point(x_lm, y_lm), 1 + static_cast<int>(0.012 * f->_location.width), cv::Scalar(0, 255, 255), -1);
+    // }
 
 
-    photoFrameVisualizer->draw(img, f->_location, color);
+    photoFrameVisualizer->draw(img, cv::Rect(cv::Point{face.left, face.top}, cv::Point{face.right, face.bottom}), color);
 }
 
 
@@ -152,11 +152,9 @@ cv::Mat Visualizer::beautify(cv::Mat img, std::list<Face::Ptr> faces, Performanc
     return beautifyFaces(img, facesContours, facesElemsContours, m);
 }
 
-void Visualizer::draw(cv::Mat img, std::list<Face::Ptr> faces) {
+void Visualizer::draw(cv::Mat img, const std::vector<FaceBox>& faces) {
     frameCounter++;
-
-    std::vector<Face::Ptr> newFaces;
     for (auto&& face : faces) {
-        drawFace(img, face);
+        drawFace(img, face, false);
     }
 }

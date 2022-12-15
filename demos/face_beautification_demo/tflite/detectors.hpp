@@ -5,85 +5,121 @@
 # pragma once
 
 #include <utils/common.hpp>
-#include "tensorflow/lite/interpreter.h"
-#include "tensorflow/lite/kernels/register.h"
-#include "tensorflow/lite/model.h"
-#include "tensorflow/lite/tools/gen_op_registration.h"
+
 #include <openvino/openvino.hpp>
 #include <opencv2/opencv.hpp>
+#include <tensorflow/lite/interpreter.h>
+#include <tensorflow/lite/kernels/register.h>
+#include <tensorflow/lite/model.h>
+#include <tensorflow/lite/tools/gen_op_registration.h>
 
-struct BaseDetection {
+#include <vector>
+#include <string>
+
+struct FaceBox {
+    float left;
+    float top;
+    float right;
+    float bottom;
+
+    float confidence;
+
+    float getWidth() const {
+        return (right - left) + 1.0f;
+    }
+    float getHeight() const {
+        return (bottom - top) + 1.0f;
+    }
+};
+
+class TFLiteModel {
+protected:
     // tflite
     /// // Create model from file. Note that the model instance must outlive the
     /// // interpreter instance.
-    std::unique_ptr<tflite::Interpreter> interpreter;
-    tflite::ops::builtin::BuiltinOpResolver resolver;
-    std::unique_ptr<tflite::FlatBufferModel> model;
-    std::string pathToModel;
-
-
-    ov::InferRequest request;
-    ov::Shape inShape;
-    const bool doRawOutputMessages;
-
     int nthreads;
-    std::string nstreams;
-    int nireq;
 
-    BaseDetection(const std::string &pathToModel, bool doRawOutputMessages, int nthreads = 0, std::string nstreams = "", int nireq = 0);
-    virtual ~BaseDetection() = default;
-    virtual std::unique_ptr<tflite::FlatBufferModel> read() = 0;
-    bool enabled() const;
+    std::unique_ptr<tflite::Interpreter> interpreter;
+    std::unique_ptr<tflite::FlatBufferModel> model;
+    tflite::ops::builtin::BuiltinOpResolver resolver;
+
+    std::vector<int> inputShape;
+
+    void readModel(const std::string &modelFile);
+    virtual void checkInputsOutputs() = 0;
+    void allocateTensors();
+    virtual void preprocess(const cv::Mat &img) = 0;
+    virtual void infer() = 0;
+    // virtual std::vector<Result> postprocess() = 0;
+
+public:
+    TFLiteModel(const std::string &modelFile);
+    virtual ~TFLiteModel() = default;
+    void setNumThreads(int nthreads);
+    // virtual std::vector<Result> run(const cv::Mat &img) = 0;
 };
 
-struct FaceDetection : BaseDetection {
-    struct Result {
-        int label;
-        float confidence;
-        cv::Rect location;
-    };
+class BlazeFace : TFLiteModel {
+public:
+    BlazeFace(const std::string &modelFile,
+                  float threshold);
+    std::vector<FaceBox> run(const cv::Mat &img);
 
-    std::string output;
-    std::string labels_output;
-    double detectionThreshold;
-    int objectSize;
-    float width;
-    float height;
-    size_t model_input_width;
-    size_t model_input_height;
-    float bb_enlarge_coefficient;
-    float bb_dx_coefficient;
-    float bb_dy_coefficient;
+protected:
+    void checkInputsOutputs() override;
+    void preprocess(const cv::Mat &img) override;
+    void infer() override;
+    std::vector<FaceBox> postprocess();
 
-    FaceDetection(const std::string &pathToModel,
-                  double detectionThreshold, bool doRawOutputMessages,
-                  float bb_enlarge_coefficient, float bb_dx_coefficient,
-                  float bb_dy_coefficient,
-                  int nthreads = 0,
-                  std::string nstreams = "",
-                  int nireq = 0);
+private:
+    struct {
+        int numLayers = 4;
+        int numBoxes = 896;
+        size_t numPoints = 16;
+        int inputHeight = 128;
+        int inputWidth = 128;
+        float anchorOffsetX = 0.5;
+        float anchorOffsetY = 0.5;
+        std::vector<int> strides = {8, 16, 16, 16};
+        double interpolatedScaleAspectRatio = 1.0;
+        cv::Scalar means = {127.5, 127.5, 127.5};
+        cv::Scalar scales = {127.5, 127.5, 127.5};
+    } ssdModelOptions;
 
-    std::unique_ptr<tflite::FlatBufferModel> read() override;
-    // void submitRequest(const cv::Mat &frame);
-    // std::vector<Result> fetchResults();
+    double confidenceThreshold;
+
+    double imgScale;
+    int origImageWidth;
+    int origImageHeight;
+
+    int boxesTensorId;
+    int scoresTensorId;
+
+    int xPadding;
+    int yPadding;
+
+    std::vector<cv::Point2f> anchors;
+    void generateAnchors();
+    void decodeBoxes(float* boxes);
+    std::pair<std::vector<FaceBox>, std::vector<float>> getDetections(const std::vector<float>& scores, float* boxes);
 };
 
 
 
-struct FacialLandmarksDetection : BaseDetection {
-    size_t enquedFaces;
-    std::vector<std::vector<float>> landmarks_results;
-    std::vector<cv::Rect> faces_bounding_boxes;
+// struct FacialLandmarksDetection : BaseDetection {
+//     size_t enquedFaces;
+//     std::vector<std::vector<float>> landmarks_results;
+//     std::vector<cv::Rect> faces_bounding_boxes;
 
-    FacialLandmarksDetection(const std::string &pathToModel,
-                             bool doRawOutputMessages);
+//     FacialLandmarksDetection(const std::string &pathToModel,
+//                              bool doRawOutputMessages);
 
-    std::unique_ptr<tflite::FlatBufferModel> read() override;
-    // void submitRequest();
+//     void read() override;
+//     // void submitRequest();
 
-    // void enqueue(const cv::Mat &face);
-    // std::vector<float> operator[](int idx);
-};
+//     // void enqueue(const cv::Mat &face);
+//     // std::vector<float> operator[](int idx);
+// };
 
 
 // struct Load {

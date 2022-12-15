@@ -3,263 +3,267 @@
 //
 
 #include "detectors.hpp"
-#include "tensorflow/lite/interpreter.h"
-#include "tensorflow/lite/kernels/register.h"
-#include "tensorflow/lite/model.h"
-#include "tensorflow/lite/tools/gen_op_registration.h"
+
 #include <utils/config_factory.h>
+#include <utils/image_utils.h>
 #include <utils/ocv_common.hpp>
+#include <utils/nms.hpp>
+
+#include <tensorflow/lite/interpreter.h>
+#include <tensorflow/lite/kernels/register.h>
+#include <tensorflow/lite/model.h>
+#include <tensorflow/lite/tools/gen_op_registration.h>
+
+#include <algorithm>
 #include <map>
 
 namespace {
 constexpr size_t ndetections = 200;
 constexpr size_t batchSize = 1;
 
-struct ssdOptionShort {
-    int numLayers = 4;
-    int inputSizeHeight = 128;
-    int inputSizeWidth = 128;
-    float anchorOffsetX = 0.5;
-    float anchorOffsetY = 0.5;
-    std::vector<int> strides = {8, 16, 16, 16};
-    double interpolatedScaleAspectRatio = 1.0;
+std::map<TfLiteType, std::string> tfLiteTypeToStr {
+  {kTfLiteNoType, "kTfLiteNoType"},
+  {kTfLiteFloat32, "kTfLiteFloat32"},
+  {kTfLiteInt32, "kTfLiteInt32"},
+  {kTfLiteUInt8, "kTfLiteUInt8"},
+  {kTfLiteInt64, "kTfLiteInt64"},
+  {kTfLiteString, "kTfLiteString"},
+  {kTfLiteBool, "kTfLiteBool"},
+  {kTfLiteInt16, "kTfLiteInt16"},
+  {kTfLiteComplex64, "kTfLiteComplex64"},
+  {kTfLiteInt8, "kTfLiteInt8"},
+  {kTfLiteFloat16, "kTfLiteFloat16"},
+  {kTfLiteFloat64, "kTfLiteFloat64"},
+  {kTfLiteComplex128, "kTfLiteComplex128"},
+  {kTfLiteUInt64, "TfLiteUInt64"},
+  {kTfLiteResource, "kTfLiteResource"},
+  {kTfLiteVariant, "kTfLiteVariant"},
+  {kTfLiteUInt32, "kTfLiteUInt32"},
+  {kTfLiteUInt16, "kTfLiteUInt16"},
 };
+
+std::string getShapeString(const TfLiteIntArray& arr) {
+    std::ostringstream oss;
+    oss << "[";
+    std::copy(arr.data, arr.data + arr.size - 1,
+        std::ostream_iterator<int>(oss, ","));
+    oss << arr.data[arr.size - 1] << "]";
+    return oss.str();
+}
 }  // namespace
 
-
-BaseDetection::BaseDetection(const std::string &pathToModel, bool doRawOutputMessages, int nthreads, std::string nstreams, int nireq)
-    : pathToModel(pathToModel), doRawOutputMessages(doRawOutputMessages), nthreads(nthreads), nstreams(nstreams), nireq(nireq) {
+TFLiteModel::TFLiteModel(const std::string &modelFile) {
+    readModel(modelFile);
 }
 
-bool BaseDetection::enabled() const  {
-    return bool(request);
-}
-
-FaceDetection::FaceDetection(const std::string &pathToModel,
-                             double detectionThreshold, bool doRawOutputMessages,
-                             float bb_enlarge_coefficient, float bb_dx_coefficient, float bb_dy_coefficient,
-                             int nthreads,std::string nstreams, int nireq)
-    : BaseDetection(pathToModel, doRawOutputMessages, nthreads, nstreams, nireq),
-      detectionThreshold(detectionThreshold),
-      objectSize(0), width(0), height(0),
-      model_input_width(0), model_input_height(0),
-      bb_enlarge_coefficient(bb_enlarge_coefficient), bb_dx_coefficient(bb_dx_coefficient),
-      bb_dy_coefficient(bb_dy_coefficient) {}
-
-// void FaceDetection::submitRequest(const cv::Mat& frame) {
-//     width = static_cast<float>(frame.cols);
-//     height = static_cast<float>(frame.rows);
-//     resize2tensor(frame, request.get_input_tensor());
-//     request.start_async();
-// }
-
-std::unique_ptr<tflite::FlatBufferModel> FaceDetection::read() {
-    slog::info << "Reading model: " << pathToModel << slog::endl;
-    model = tflite::FlatBufferModel::BuildFromFile(pathToModel.c_str());
+void TFLiteModel::readModel(const std::string &modelFile) {
+    slog::info << "Reading model: " << modelFile << slog::endl;
+    model = tflite::FlatBufferModel::BuildFromFile(modelFile.c_str());
     if (!model) {
-        throw std::runtime_error("Failed to read model " + pathToModel);
+        throw std::runtime_error("Failed to read model " + modelFile);
     }
+    slog::info << "Model name: " << model->GetModel() << slog::endl;
+
     tflite::InterpreterBuilder(*model, resolver)(&interpreter);
-    // std::string inputName = interpreter->GetInputName(0);
-    // slog::info << "Inputs:" << slog::endl;
-    // slog::info << "\t" << inputName << slog::endl;
-    // // interpreter->AllocateTensors();
-    // std::string outputNameScores = interpreter->GetOutputName(0);
-    // std::string outputNameBoxes = interpreter->GetOutputName(1);
-    // slog::info << "Outputs:" << slog::endl;
-    // slog::info << "\t" << outputNameScores << slog::endl;
-    // slog::info << "\t" << outputNameBoxes << slog::endl;
+    if (!interpreter) {
+        throw std::runtime_error("Interpreter failed to build");
+    }
 }
 
-// std::vector<FaceDetection::Result> FaceDetection::fetchResults() {
-//     std::vector<FaceDetection::Result> results;
-//     request.wait();
-//     float *detections = request.get_tensor(output).data<float>();
-//     if (!labels_output.empty()) {
-//         const int32_t *labels = request.get_tensor(labels_output).data<int32_t>();
-//         for (size_t i = 0; i < ndetections; i++) {
-//             Result r;
-//             r.label = labels[i];
-//             r.confidence = detections[i * objectSize + 4];
+void BlazeFace::generateAnchors() {
+    int layerId = 0;
+    while (layerId < ssdModelOptions.numLayers) {
+        int last_same_stride_layer = layerId;
+        int repeats = 0;
+        while (last_same_stride_layer < ssdModelOptions.numLayers &&
+               ssdModelOptions.strides[last_same_stride_layer] == ssdModelOptions.strides[layerId]) {
+            last_same_stride_layer += 1;
+            repeats += 2;
+        }
+        size_t stride = ssdModelOptions.strides[layerId];
+        int feature_map_height = ssdModelOptions.inputHeight / stride;
+        int feature_map_width = ssdModelOptions.inputWidth / stride;
+        for(int y = 0; y < feature_map_height; ++y) {
+            float y_center = (y + ssdModelOptions.anchorOffsetY) / feature_map_height;
+            for(int x = 0; x < feature_map_width; ++x) {
+                float x_center = (x + ssdModelOptions.anchorOffsetX) / feature_map_width;
+                for(int i = 0; i < repeats; ++i)
+                    anchors.emplace_back(x_center, y_center);
+            }
+        }
 
-//             if (r.confidence <= detectionThreshold && !doRawOutputMessages) {
-//                 continue;
-//             }
+        layerId = last_same_stride_layer;
+    }
+}
 
-//             r.location.x = static_cast<int>(detections[i * objectSize] / model_input_width * width);
-//             r.location.y = static_cast<int>(detections[i * objectSize + 1] / model_input_height * height);
-//             r.location.width = static_cast<int>(detections[i * objectSize + 2] / model_input_width * width - r.location.x);
-//             r.location.height = static_cast<int>(detections[i * objectSize + 3] / model_input_height * height - r.location.y);
+void TFLiteModel::setNumThreads(int nthreads) {
+    interpreter->SetNumThreads(nthreads);
+}
 
-//             // Make square and enlarge face bounding box for more robust operation of face analytics networks
-//             int bb_width = r.location.width;
-//             int bb_height = r.location.height;
+void TFLiteModel::allocateTensors() {
+    interpreter->AllocateTensors();
+}
 
-//             int bb_center_x = r.location.x + bb_width / 2;
-//             int bb_center_y = r.location.y + bb_height / 2;
+BlazeFace::BlazeFace(const std::string &modelFile, float threshold)
+    : TFLiteModel(modelFile),
+      confidenceThreshold(threshold) {
+    checkInputsOutputs();
+    allocateTensors();
+    generateAnchors();
+}
 
-//             int max_of_sizes = std::max(bb_width, bb_height);
+void BlazeFace::checkInputsOutputs() {
+    if (interpreter->inputs().size() != 1) {
+        throw std::logic_error("Model expected to have only one input");
+    }
+    std::string inputName = interpreter->GetInputName(0);
+    auto inputTensor = interpreter->input_tensor(0);
+    auto dims = inputTensor->dims;
+    if (dims->size != 4) {
+        throw std::logic_error("Models input expected to have 4 demensions, not " + std::to_string(dims->size));
+    }
+    slog::info << "Inputs:" << slog::endl;
+    slog::info << "\t" << inputName << " : " << getShapeString(*dims) << " "
+        << tfLiteTypeToStr.at(inputTensor->type) << slog::endl;
 
-//             int bb_new_width = static_cast<int>(bb_enlarge_coefficient * max_of_sizes);
-//             int bb_new_height = static_cast<int>(bb_enlarge_coefficient * max_of_sizes);
+    if (interpreter->outputs().size() != 2) {
+        throw std::logic_error("Model expected to have 2 outputs");
+    }
+    slog::info << "Outputs:" << slog::endl;
+    for (int i = 0; i < interpreter->outputs().size(); ++i) {
+        auto outputTensor = interpreter->output_tensor(i);
+        auto dims = outputTensor->dims;
+        slog::info << "\t" << interpreter->GetOutputName(i) << " : " << getShapeString(*dims) <<  " "
+            << tfLiteTypeToStr.at(outputTensor->type) << slog::endl;
+        if (dims->data[dims->size - 1] == 16) {
+            boxesTensorId = i;
+        } else if (dims->data[dims->size - 1] == 1) {
+            scoresTensorId = i;
+        } else {
+            throw std::logic_error("Incorrect last dimension for " + std::string(interpreter->GetOutputName(i)) + " output!");
+        }
+    }
+}
 
-//             r.location.x = bb_center_x - static_cast<int>(std::floor(bb_dx_coefficient * bb_new_width / 2));
-//             r.location.y = bb_center_y - static_cast<int>(std::floor(bb_dy_coefficient * bb_new_height / 2));
+void BlazeFace::preprocess(const cv::Mat &img) {
+    origImageHeight = img.size().height;
+    origImageWidth = img.size().width;
 
-//             r.location.width = bb_new_width;
-//             r.location.height = bb_new_height;
+    cv::Mat resizedImage = resizeImageExt(img, ssdModelOptions.inputWidth, ssdModelOptions.inputHeight,
+        RESIZE_MODE::RESIZE_KEEP_ASPECT_LETTERBOX, cv::INTER_LINEAR);
 
-//             if (doRawOutputMessages) {
-//                 slog::debug << "[" << i << "," << r.label << "] element, prob = " << r.confidence <<
-//                              "    (" << r.location.x << "," << r.location.y << ")-(" << r.location.width << ","
-//                           << r.location.height << ")"
-//                           << ((r.confidence > detectionThreshold) ? " WILL BE RENDERED!" : "") << slog::endl;
-//             }
-//             if (r.confidence > detectionThreshold) {
-//                 results.push_back(r);
-//             }
-//         }
-//     }
+    imgScale = std::min(static_cast<double>(ssdModelOptions.inputWidth) / origImageWidth,
+        static_cast<double>(ssdModelOptions.inputHeight) / origImageHeight);
+    xPadding = (ssdModelOptions.inputWidth - std::floor(origImageWidth * imgScale)) / 2;
+    yPadding = (ssdModelOptions.inputHeight -  std::floor(origImageHeight * imgScale)) / 2;
 
-//     for (size_t i = 0; i < ndetections; i++) {
-//         float image_id = detections[i * objectSize];
-//         if (image_id < 0) {
-//             break;
-//         }
-//         Result r;
-//         r.label = static_cast<int>(detections[i * objectSize + 1]);
-//         r.confidence = detections[i * objectSize + 2];
+    resizedImage.convertTo(resizedImage, CV_32F);
+    cv::cvtColor(resizedImage, resizedImage, cv::COLOR_BGR2RGB);
+    resizedImage -= ssdModelOptions.means;
+    resizedImage /= cv::Mat(ssdModelOptions.scales);
 
-//         if (r.confidence <= detectionThreshold && !doRawOutputMessages) {
-//             continue;
-//         }
+    int channelsNum = resizedImage.channels();
+    float* inputTensor = interpreter->typed_input_tensor<float>(0);
+    float* imgData = resizedImage.ptr<float>();
+    for (int32_t i = 0; i < 128 * 128; i++) {
+        for (int32_t c = 0; c < channelsNum; c++) {
+            inputTensor[i * channelsNum + c] = imgData[i * 3 + c];
+        }
+    }
+}
 
-//         r.location.x = static_cast<int>(detections[i * objectSize + 3] * width);
-//         r.location.y = static_cast<int>(detections[i * objectSize + 4] * height);
-//         r.location.width = static_cast<int>(detections[i * objectSize + 5] * width - r.location.x);
-//         r.location.height = static_cast<int>(detections[i * objectSize + 6] * height - r.location.y);
+void BlazeFace::infer() {
+    interpreter->Invoke();
+}
 
-//         // Make square and enlarge face bounding box for more robust operation of face analytics networks
-//         int bb_width = r.location.width;
-//         int bb_height = r.location.height;
+void BlazeFace::decodeBoxes(float* boxes) {
+    for(int i = 0; i < ssdModelOptions.numBoxes; ++i) {
+        size_t scale = ssdModelOptions.inputHeight;
+        size_t num_points = ssdModelOptions.numPoints / 2;
+        const int start_pos = i * ssdModelOptions.numPoints;
+        for(int j = 0; j < num_points; ++j) {
+            boxes[start_pos + 2*j]  = boxes[start_pos + 2*j]  / scale;
+            boxes[start_pos + 2*j + 1]  = boxes[start_pos + 2*j + 1] / scale;
+            if (j != 1) {
+                boxes[start_pos + 2*j] += anchors[i].x;
+                boxes[start_pos + 2*j + 1] += anchors[i].y;
+            }
+        }
 
-//         int bb_center_x = r.location.x + bb_width / 2;
-//         int bb_center_y = r.location.y + bb_height / 2;
+        // convert x_center, y_center, w, h to xmin, ymin, xmax, ymax
 
-//         int max_of_sizes = std::max(bb_width, bb_height);
+        float half_width = boxes[start_pos + 2] / 2;
+        float half_height = boxes[start_pos + 3] / 2;
+        float center_x = boxes[start_pos];
+        float center_y = boxes[start_pos + 1];
 
-//         int bb_new_width = static_cast<int>(bb_enlarge_coefficient * max_of_sizes);
-//         int bb_new_height = static_cast<int>(bb_enlarge_coefficient * max_of_sizes);
+        boxes[start_pos] -= half_width;
+        boxes[start_pos + 1] -= half_height;
 
-//         r.location.x = bb_center_x - static_cast<int>(std::floor(bb_dx_coefficient * bb_new_width / 2));
-//         r.location.y = bb_center_y - static_cast<int>(std::floor(bb_dy_coefficient * bb_new_height / 2));
+        boxes[start_pos + 2] = center_x + half_width;
+        boxes[start_pos + 3] = center_y + half_height;
+    }
+}
 
-//         r.location.width = bb_new_width;
-//         r.location.height = bb_new_height;
+std::pair<std::vector<FaceBox>, std::vector<float>> BlazeFace::getDetections(const std::vector<float>& scores, float* boxes) {
+    std::vector<FaceBox> detections;
+    std::vector<float> filteredScores;
+    for(int box_index = 0; box_index < ssdModelOptions.numBoxes; ++box_index) {
+        float score = scores[box_index];
 
-//         if (doRawOutputMessages) {
-//             slog::debug << "[" << i << "," << r.label << "] element, prob = " << r.confidence <<
-//                          "    (" << r.location.x << "," << r.location.y << ")-(" << r.location.width << ","
-//                       << r.location.height << ")"
-//                       << ((r.confidence > detectionThreshold) ? " WILL BE RENDERED!" : "") << slog::endl;
-//         }
-//         if (r.confidence > detectionThreshold) {
-//             results.push_back(r);
-//         }
-//     }
-//     return results;
-// }
+        if (score < confidenceThreshold) {
+            continue;
+        }
 
-// FacialLandmarksDetection::FacialLandmarksDetection(const std::string &pathToModel,
-//                                                    bool doRawOutputMessages)
-//     : BaseDetection(pathToModel, doRawOutputMessages), enquedFaces(0) {
-// }
+        FaceBox detected_object;
+        detected_object.confidence = score;
 
-// void FacialLandmarksDetection::submitRequest() {
-//     if (!enquedFaces) return;
-//     request.set_input_tensor(ov::Tensor{request.get_input_tensor(), {0, 0, 0, 0}, {batchSize, inShape[1], inShape[2], inShape[3]}});
-//     request.start_async();
-//     enquedFaces = 0;
-// }
+        const int start_pos = box_index * ssdModelOptions.numPoints;
+        const float x0 = (std::min(std::max(0.0f, boxes[start_pos]), 1.0f) * ssdModelOptions.inputWidth - xPadding) / imgScale;
+        const float y0 = (std::min(std::max(0.0f, boxes[start_pos + 1]), 1.0f) * ssdModelOptions.inputHeight -yPadding) / imgScale;
+        const float x1 = (std::min(std::max(0.0f, boxes[start_pos + 2]), 1.0f) * ssdModelOptions.inputWidth - xPadding) / imgScale;
+        const float y1 = (std::min(std::max(0.0f, boxes[start_pos + 3]), 1.0f) * ssdModelOptions.inputHeight - yPadding) / imgScale;
 
-// void FacialLandmarksDetection::enqueue(const cv::Mat &face) {
-//     if (!enabled()) {
-//         return;
-//     }
-//     ov::Tensor batch = request.get_input_tensor();
-//     batch.set_shape(inShape);
-//     resize2tensor(face, ov::Tensor{batch, {enquedFaces, 0, 0, 0}, {enquedFaces + 1, inShape[1], inShape[2], inShape[3]}});
-//     enquedFaces++;
-// }
+        detected_object.left = static_cast<int>(round(static_cast<double>(x0)));
+        detected_object.top  = static_cast<int>(round(static_cast<double>(y0)));
+        detected_object.right = static_cast<int>(round(static_cast<double>(x1)));
+        detected_object.bottom = static_cast<int>(round(static_cast<double>(y1)));
 
-// std::vector<float> FacialLandmarksDetection::operator[](int idx) {
-//     std::vector<float> normedLandmarks;
+        filteredScores.push_back(score);
+        detections.push_back(detected_object);
+    }
 
-//     request.wait();
-//     const ov::Tensor& tensor = request.get_output_tensor();
-//     size_t n_lm = tensor.get_shape().at(1);
-//     const float *normed_coordinates = request.get_output_tensor().data<float>();
+    return {detections, filteredScores};
+}
 
-//     if (doRawOutputMessages) {
-//         slog::debug << "[" << idx << "] element, normed facial landmarks coordinates (x, y):" << slog::endl;
-//     }
+std::vector<FaceBox> BlazeFace::postprocess() {
+    std::vector<FaceBox> faces;
+    float* boxesPtr = interpreter->typed_output_tensor<float>(boxesTensorId);
+    float* scoresPtr = interpreter->typed_output_tensor<float>(scoresTensorId);
 
-//     auto begin = n_lm / 2 * idx;
-//     auto end = begin + n_lm / 2;
-//     for (auto i_lm = begin; i_lm < end; ++i_lm) {
-//         float normed_x = normed_coordinates[2 * i_lm];
-//         float normed_y = normed_coordinates[2 * i_lm + 1];
+    std::vector<float> scores(scoresPtr, scoresPtr + ssdModelOptions.numBoxes);
 
-//         if (doRawOutputMessages) {
-//             slog::debug <<'\t' << normed_x << ", " << normed_y << slog::endl;
-//         }
+    auto sigmoid = [](float& score) {
+        score = 1.f / (1.f + exp(-score));
+    };
+    std::for_each(scores.begin(), scores.end(), sigmoid);
+    auto max_score = *std::max_element(std::begin(scores), std::end(scores));
+    decodeBoxes(boxesPtr);
 
-//         normedLandmarks.push_back(normed_x);
-//         normedLandmarks.push_back(normed_y);
-//     }
+    auto [detections, filteredScores] = getDetections(scores, boxesPtr);
+    std::vector<int> keep = nms(detections, filteredScores, 0.5);
+    std::vector<FaceBox> results;
+    for(auto& index : keep) {
+        results.push_back(detections[index]);
+    }
+    return results;
+}
 
-//     return normedLandmarks;
-// }
-
-// std::shared_ptr<ov::Model> FacialLandmarksDetection::read(const ov::Core& core) {
-//     slog::info << "Reading model: " << pathToModel << slog::endl;
-//     std::shared_ptr<ov::Model> model = core.read_model(pathToModel);
-//     logBasicModelInfo(model);
-
-//     ov::Shape outShape = model->output().get_shape();
-//     if (outShape.size() != 2 && outShape.back() != 70) {
-//         throw std::logic_error("Facial Landmarks Estimation network output layer should have 2 dimensions and 70 as"
-//                                " the last dimension");
-//     }
-//     ov::preprocess::PrePostProcessor ppp(model);
-//     ppp.input().tensor().
-//         set_element_type(ov::element::u8).
-//         set_layout("NHWC");
-//     ppp.input().preprocess().convert_layout("NCHW");
-//     ppp.output().tensor().set_element_type(ov::element::f32);
-//     model = ppp.build();
-//     inShape = model->input().get_shape();
-//     inShape[0] = batchSize;
-//     ov::set_batch(model, batchSize); //{1, int64_t(ndetections)});
-//     return model;
-// }
-
-
-// Load::Load(BaseDetection& detector) : detector(detector) {
-// }
-
-// void Load::into(ov::Core& core, const std::string & deviceName) const {
-
-//     interpreter->SetNumThreads(8);
-
-//     // if (!detector.pathToModel.empty()) {
-//     //     auto config = ConfigFactory::getUserConfig("CPU", detector.nireq, detector.nstreams, detector.nthreads);
-//     //     ov::CompiledModel cml = core.compile_model(detector.read(core), config.deviceName, config.compiledModelConfig);
-//     //     logCompiledModelInfo(cml, detector.pathToModel, deviceName);
-//     //     detector.request = cml.create_infer_request();
-//     // }
-// }
-
+std::vector<FaceBox> BlazeFace::run(const cv::Mat &img) {
+    preprocess(img);
+    infer();
+    return postprocess();
+}
 
 CallStat::CallStat():
     _number_of_calls(0), _total_duration(0.0), _last_call_duration(0.0), _smoothed_duration(-1.0) {

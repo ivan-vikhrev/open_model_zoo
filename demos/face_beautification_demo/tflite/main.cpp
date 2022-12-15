@@ -7,6 +7,8 @@
 
 #include <gflags/gflags.h>
 #include <utils/images_capture.h>
+#include <utils/image_utils.h>
+#include <utils/slog.hpp>
 #include <monitors/presenter.h>
 
 #include <tensorflow/lite/version.h>
@@ -127,42 +129,23 @@ int main(int argc, char *argv[]) {
 
     // --------------------------- 1. Loading Inference Engine -----------------------------
 
-    // FaceDetection faceDetector(FLAGS_m, FLAGS_t, FLAGS_r,
-    //                             static_cast<float>(FLAGS_bb_enlarge_coef), static_cast<float>(FLAGS_dx_coef), static_cast<float>(FLAGS_dy_coef),
-    //                             FLAGS_nthreads, FLAGS_nstreams, FLAGS_nireq);
-    std::unique_ptr<tflite::FlatBufferModel> model = tflite::FlatBufferModel::BuildFromFile(FLAGS_m.c_str());
-    if (!model) {
-        throw std::runtime_error("Failed to read model " + FLAGS_m);
-    }
-    std::unique_ptr<tflite::Interpreter> interpreter;
-    tflite::ops::builtin::BuiltinOpResolver resolver;
-    tflite::InterpreterBuilder(*model, resolver)(&interpreter);
-    std::string inputName = interpreter->GetInputName(0);
-    slog::info << "Inputs:" << slog::endl;
-    slog::info << "\t" << inputName << slog::endl;
-    // interpreter->AllocateTensors();
-    std::string outputNameScores = interpreter->GetOutputName(0);
-    std::string outputNameBoxes = interpreter->GetOutputName(1);
-    slog::info << "Outputs:" << slog::endl;
-    slog::info << "\t" << outputNameScores << slog::endl;
-    slog::info << "\t" << outputNameBoxes << slog::endl;
+
     // FacialLandmarksDetection facialLandmarksDetector(FLAGS_mlm, FLAGS_r);
     // ---------------------------------------------------------------------------------------------------
 
-    // --------------------------- 2. Reading IR models and loading them to plugins ----------------------
-    // faceDetector.read();
+    // --------------------------- 2. Reading TFlite models and build interpreter ----------------------
+    BlazeFace faceDetector(FLAGS_m, FLAGS_t);
     // Load(faceDetector).into(core, FLAGS_d);
     // Load(facialLandmarksDetector).into(core, FLAGS_d);
     // ----------------------------------------------------------------------------------------------------
-    return 0;
     // Timer timer;
     // std::ostringstream out;
     // size_t framesCounter = 0;
     // double msrate = 1000.0 / FLAGS_fps;
     // std::list<Face::Ptr> faces;
     // size_t id = 0;
-
-    // std::unique_ptr<ImagesCapture> cap = openImagesCapture(FLAGS_i, FLAGS_loop);
+    size_t framesCounter = 0;
+    std::unique_ptr<ImagesCapture> cap = openImagesCapture(FLAGS_i, FLAGS_loop);
 
     // auto startTime = std::chrono::steady_clock::now();
     // cv::Mat frame = cap->read();
@@ -170,98 +153,63 @@ int main(int argc, char *argv[]) {
     //     throw std::runtime_error("Can't read an image from the input");
     // }
 
-    // Presenter presenter(FLAGS_u, 60, {frame.cols / 4, 60});
+    Presenter presenter(FLAGS_u);
 
-    // Visualizer visualizer{frame.size()};
+    Visualizer visualizer{{}};
 
-    // LazyVideoWriter videoWriter{FLAGS_o, FLAGS_fps > 0.0 ? FLAGS_fps : cap->fps(), FLAGS_lim};
+    LazyVideoWriter videoWriter{FLAGS_o, FLAGS_fps > 0.0 ? FLAGS_fps : cap->fps(), FLAGS_lim};
 
     // // Detecting all faces on the first frame and reading the next one
-    // faceDetector.submitRequest(frame);
 
-    // auto startTimeNextFrame = std::chrono::steady_clock::now();
     // cv::Mat nextFrame = cap->read();
-    // while (frame.data) {
-    //     timer.start("total");
-    //     const auto startTimePrevFrame = startTime;
-    //     cv::Mat prevFrame = std::move(frame);
-    //     startTime = startTimeNextFrame;
-    //     frame = std::move(nextFrame);
-    //     framesCounter++;
+    bool keepRunning = true;
+    while (keepRunning) {
+        // timer.start("total");
+        // const auto startTimePrevFrame = startTime;
+        // cv::Mat prevFrame = std::move(frame);
+        // startTime = startTimeNextFrame;
+        // frame = std::move(nextFrame);
+        auto startTime = std::chrono::steady_clock::now();
 
-    //     // Retrieving face detection results for the previous frame
-    //     std::vector<FaceDetection::Result> prev_detection_results = faceDetector.fetchResults();
+        cv::Mat frame = cap->read();
+        if (frame.empty()) {
+            // Input stream is over
+            break;
+        }
+        framesCounter++;
 
-    //     // No valid frame to infer if previous frame is the last
-    //     if (frame.data) {
-    //         if (frame.size() != prevFrame.size()) {
-    //             throw std::runtime_error("Images of different size are not supported");
-    //         }
-    //         faceDetector.submitRequest(frame);
-    //     }
+        std::vector<FaceBox> faces = faceDetector.run(frame);
 
-    //     // Filling inputs of face analytics networks
-    //     for (auto &&face : prev_detection_results) {
-    //         cv::Rect clippedRect = face.location & cv::Rect({0, 0}, prevFrame.size());
-    //         const cv::Mat& crop = prevFrame(clippedRect);
-    //         facialLandmarksDetector.enqueue(crop);
-    //     }
+        // presenter.drawGraphs(prevFrame);
+        // renderMetrics.update(renderingStart);
+        // timer.finish("total");
+        // frame = resizeImageExt(frame , 128, 128,
+        //     RESIZE_MODE::RESIZE_KEEP_ASPECT_LETTERBOX, cv::INTER_LINEAR);
 
-    //     // Running Facial Landmarks Estimation networks simultaneously
-    //     facialLandmarksDetector.submitRequest();
+        visualizer.draw(frame, faces);
 
-    //     // Read the next frame while waiting for inference results
-    //     startTimeNextFrame = std::chrono::steady_clock::now();
-    //     nextFrame = cap->read();
+        metrics.update(startTime, frame, { 10, 22 }, cv::FONT_HERSHEY_COMPLEX, 0.65);
 
-    //     //  Postprocessing
-    //     std::list<Face::Ptr> prev_faces;
+        videoWriter.write(frame);
+        // int delay = std::max(1, static_cast<int>(msrate - timer["total"].getLastCallDuration()));
+        if (FLAGS_show) {
+            cv::imshow(argv[0], frame);
+            // cv::imshow("Beautified", beutifiedImg);
+            int key = cv::waitKey(1);
+            if ('P' == key || 'p' == key || '0' == key || ' ' == key) {
+                key = cv::waitKey(0);
+            }
+            if (27 == key || 'Q' == key || 'q' == key) {
+                break;
+            }
+            presenter.handleKey(key);
+        }
+    }
 
-    //     faces.clear();
-
-    //     // For every detected face
-    //     for (size_t i = 0; i < prev_detection_results.size(); i++) {
-    //         auto& result = prev_detection_results[i];
-    //         cv::Rect rect = result.location & cv::Rect({0, 0}, prevFrame.size());
-
-    //         Face::Ptr face;
-    //         face = std::make_shared<Face>(id++, rect);
-
-    //         face->updateLandmarks(facialLandmarksDetector[i]);
-
-    //         faces.push_back(face);
-    //     }
-
-    //     // drawing faces
-    //     auto renderingStart = std::chrono::steady_clock::now();
-    //     cv::Mat beutifiedImg = visualizer.beautify(prevFrame, faces, bMetrics);
-    //     visualizer.draw(prevFrame, faces);
-    //     presenter.drawGraphs(prevFrame);
-    //     renderMetrics.update(renderingStart);
-    //     metrics.update(startTimePrevFrame, prevFrame, { 10, 22 }, cv::FONT_HERSHEY_COMPLEX, 0.65);
-    //     timer.finish("total");
-
-    //     videoWriter.write(prevFrame);
-
-    //     int delay = std::max(1, static_cast<int>(msrate - timer["total"].getLastCallDuration()));
-    //     if (FLAGS_show) {
-    //         cv::imshow(argv[0], prevFrame);
-    //         cv::imshow("Beautified", beutifiedImg);
-    //         int key = cv::waitKey(delay);
-    //         if ('P' == key || 'p' == key || '0' == key || ' ' == key) {
-    //             key = cv::waitKey(0);
-    //         }
-    //         if (27 == key || 'Q' == key || 'q' == key) {
-    //             break;
-    //         }
-    //         presenter.handleKey(key);
-    //     }
-    // }
-
-    // slog::info << "Metrics report:" << slog::endl;
-    // metrics.logTotal();
+    slog::info << "Metrics report:" << slog::endl;
+    metrics.logTotal();
     // logLatencyPerStage(0.0, 0.0, 0.0, bMetrics.getTotal().latency, renderMetrics.getTotal().latency);
-    // slog::info << presenter.reportMeans() << slog::endl;
+    slog::info << presenter.reportMeans() << slog::endl;
 
-    // return 0;
+    return 0;
 }
