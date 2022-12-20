@@ -15,6 +15,10 @@
 #include <tensorflow/lite/tools/gen_op_registration.h>
 
 #include <algorithm>
+
+#define _USE_MATH_DEFINES
+#include <cmath>
+
 #include <map>
 
 namespace {
@@ -228,15 +232,47 @@ std::pair<std::vector<BBox>, std::vector<float>> BlazeFace::getDetections(const 
         object.confidence = score;
 
         const int start_pos = box_index * ssdModelOptions.numPoints;
-        const float x0 = (std::min(std::max(0.0f, boxes[start_pos]), 1.0f) * inputWidth - xPadding) / imgScale;
-        const float y0 = (std::min(std::max(0.0f, boxes[start_pos + 1]), 1.0f) * inputHeight -yPadding) / imgScale;
-        const float x1 = (std::min(std::max(0.0f, boxes[start_pos + 2]), 1.0f) * inputWidth - xPadding) / imgScale;
-        const float y1 = (std::min(std::max(0.0f, boxes[start_pos + 3]), 1.0f) * inputHeight - yPadding) / imgScale;
+        const float x0 = (boxes[start_pos] * inputWidth - xPadding) / imgScale;
+        const float y0 = (boxes[start_pos + 1] * inputHeight -yPadding) / imgScale;
+        const float x1 = (boxes[start_pos + 2] * inputWidth - xPadding) / imgScale;
+        const float y1 = (boxes[start_pos + 3] * inputHeight - yPadding) / imgScale;
 
-        object.left = static_cast<int>(round(static_cast<double>(x0)));
-        object.top  = static_cast<int>(round(static_cast<double>(y0)));
-        object.right = static_cast<int>(round(static_cast<double>(x1)));
-        object.bottom = static_cast<int>(round(static_cast<double>(y1)));
+        const float xLeftEye = (boxes[start_pos + 4] * inputWidth - xPadding) / imgScale;
+        const float yLeftEye = (boxes[start_pos + 5] * inputHeight - yPadding) / imgScale;
+
+        const float xRightEye = (boxes[start_pos + 6] * inputWidth - xPadding) / imgScale;
+        const float yRightEye = (boxes[start_pos + 7] * inputHeight - yPadding) / imgScale;
+
+        const float xNose = (boxes[start_pos + 8] * inputWidth - xPadding) / imgScale;
+        const float yNose = (boxes[start_pos + 9] * inputHeight - yPadding) / imgScale;
+
+        const float xMouth = (boxes[start_pos + 10] * inputWidth - xPadding) / imgScale;
+        const float yMouth = (boxes[start_pos + 11] * inputHeight - yPadding) / imgScale;
+
+        const float xLeftTragion = (boxes[start_pos + 12] * inputWidth - xPadding) / imgScale;
+        const float yLeftTragion  = (boxes[start_pos + 13] * inputHeight - yPadding) / imgScale;
+
+        const float xRightTragion = (boxes[start_pos + 14] * inputWidth - xPadding) / imgScale;
+        const float yRightTragion = (boxes[start_pos + 15] * inputHeight - yPadding) / imgScale;
+
+
+        object.left = clamp(x0, 0.f, static_cast<float>(origImageWidth));
+        object.top  = clamp(y0, 0.f, static_cast<float>(origImageHeight));
+        object.right = clamp(x1, 0.f, static_cast<float>(origImageWidth));
+        object.bottom = clamp(y1, 0.f, static_cast<float>(origImageHeight));
+
+        object.leftEye = {clamp(xLeftEye, 0.f, static_cast<float>(origImageWidth)),
+             clamp(yLeftEye, 0.f, static_cast<float>(origImageHeight))};
+        object.rightEye = {clamp(xRightEye, 0.f, static_cast<float>(origImageWidth)),
+             clamp(yRightEye, 0.f, static_cast<float>(origImageHeight))};
+        object.nose = {clamp(xNose, 0.f, static_cast<float>(origImageWidth)),
+             clamp(yNose, 0.f, static_cast<float>(origImageHeight))};
+        object.mouth = {clamp(xMouth, 0.f, static_cast<float>(origImageWidth)),
+             clamp(yMouth, 0.f, static_cast<float>(origImageHeight))};
+        object.leftTragion = {clamp(xLeftTragion, 0.f, static_cast<float>(origImageWidth)),
+             clamp(yLeftTragion, 0.f, static_cast<float>(origImageHeight))};
+        object.rightTragion = {clamp(xRightTragion, 0.f, static_cast<float>(origImageWidth)),
+             clamp(yRightTragion, 0.f, static_cast<float>(origImageHeight))};
 
         filteredScores.push_back(score);
         detections.push_back(object);
@@ -257,7 +293,7 @@ std::unique_ptr<Result> BlazeFace::postprocess() {
     };
 
     std::for_each(scores.begin(), scores.end(), sigmoid);
-    // auto max_score = *std::max_element(std::begin(scores), std::end(scores));
+
     decodeBoxes(boxesPtr);
 
     auto [detections, filteredScores] = getDetections(scores, boxesPtr);
@@ -269,12 +305,31 @@ std::unique_ptr<Result> BlazeFace::postprocess() {
     return std::unique_ptr<Result>(result);
 }
 
-cv::Mat FaceMesh::enlargeFaceRoi(const cv::Mat& img, cv::Rect roi) {
-    int inflationX = std::lround(roi.width * roiEnlargeCoeff);
-    int inflationY = std::lround(roi.height * roiEnlargeCoeff);
+cv::Rect FaceMesh::enlargeFaceRoi(cv::Rect roi) {
+    int inflationX = std::lround(roi.width * roiEnlargeCoeff) - roi.width;
+    int inflationY = std::lround(roi.height * roiEnlargeCoeff) - roi.height;
     roi -= cv::Point(inflationX / 2, inflationY / 2);
     roi += cv::Size(inflationX, inflationY);
-    return img(roi);
+    return roi;
+}
+
+cv::Mat FaceMesh::calculateRotation(std::vector<cv::Point2f> lm, cv::Point p1, cv::Point p2) {
+    double angle = -std::atan2(p1.y - p2.y, p2.x - p1.x);
+    double rotation = angle - 2 * M_PI * std::floor((angle + M_PI) / (2 * M_PI));
+    double sin = std::sin(rotation);
+    double cos = std::cos(rotation);
+    std::vector<float> data = {(float)cos, (float)sin, (float)-sin, (float)cos};
+    cv::Mat rotMat{2, 2, CV_32F, data.data()};
+    cv::Mat m(lm.size(), 2, CV_32F, lm.data());
+    // std::cout << m << std::endl;
+    // m -= cv::Scalar(0.5, 0.5);
+    // m.convertTo(m, CV_32F2)
+
+    std::cout << m << std::endl;
+    std::cout << rotMat << std::endl;
+    cv::Mat rotated = m * rotMat;
+
+    return rotated;
 }
 
 FaceMesh::FaceMesh(const std::string &modelFile)
@@ -343,12 +398,21 @@ std::unique_ptr<Result> FaceMesh::postprocess() {
     float* landmarksPtr = interpreter->typed_output_tensor<float>(0);
 
     LandmarksResult* result = new LandmarksResult();
-    for (int i = 0; i < 1404; ++i) {
-        float x = landmarksPtr[i * 3];
-        float y = landmarksPtr[i * 3 + 1];
+    auto fillLandmarks = [this, landmarksPtr](std::vector<cv::Point2f>& lm, const std::vector<int>& ids) {
+        for (int i : ids) {
+            float x = (landmarksPtr[i * 3] - xPadding) / 192;;
+            float y = (landmarksPtr[i * 3 + 1] - yPadding) / 192;
+            lm.emplace_back(clamp(x, 0.f, static_cast<float>(origImageWidth)),
+                clamp(y, 0.f, static_cast<float>(origImageHeight)));
+        }
+    };
 
-        result->landmarks.emplace_back(x, y);
-    }
+    // fillLandmarks(result->landmarks.faceOval, faceOvalIdx);
+    fillLandmarks(result->landmarks.leftEye, leftEyeIdx);
+    // fillLandmarks(result->landmarks.rightEye, rightEyeIdx);
+    // fillLandmarks(result->landmarks.leftBrow, leftBrowIdx);
+    // fillLandmarks(result->landmarks.rightBrow, rightBrowIdx);
+    // fillLandmarks(result->lips, lipsIdx);
 
     return std::unique_ptr<Result>(result);
 }

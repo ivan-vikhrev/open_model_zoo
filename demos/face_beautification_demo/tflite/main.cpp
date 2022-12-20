@@ -143,8 +143,8 @@ int main(int argc, char *argv[]) {
     faceDetector.setNumThreads(FLAGS_nthreads);
     slog::info << "\tThreads number:" <<  FLAGS_nthreads << slog::endl;
 
-    FaceMesh facialLandmarks(FLAGS_mlm);
-    facialLandmarks.setNumThreads(FLAGS_nthreads);
+    FaceMesh facialLandmarksDetector(FLAGS_mlm);
+    facialLandmarksDetector.setNumThreads(FLAGS_nthreads);
     slog::info << "\tThreads number: " <<  FLAGS_nthreads << slog::endl;
 
     // ----------------------------------------------------------------------------------------------------
@@ -193,22 +193,51 @@ int main(int argc, char *argv[]) {
         for (auto& box : detectionRes.boxes) {
             cv::Rect faceRect = cv::Rect(cv::Point{static_cast<int>(box.left), static_cast<int>(box.top)},
                 cv::Point{static_cast<int>(box.right), static_cast<int>(box.bottom)});
-            cv::Mat faceRoi = FaceMesh::enlargeFaceRoi(frame, faceRect);
-            cv::imshow("Face", FaceMesh::enlargeFaceRoi(frame, faceRect));
-            LandmarksResult landmarksRes = facialLandmarks.run(FaceMesh::enlargeFaceRoi(frame, faceRect))->asRef<LandmarksResult>();
-            faces.emplace_back(faceRect, box.confidence, landmarksRes.landmarks);
+            cv::Rect enlargedRect = FaceMesh::enlargeFaceRoi(faceRect) & cv::Rect({}, frame.size());
+            // cv::imshow("Face", frame(enlargedRect));
+            LandmarksResult landmarksRes = facialLandmarksDetector.run(frame(enlargedRect))->asRef<LandmarksResult>();
 
 
-            auto frame_landmarks = resizeImageExt(faceRoi, 192, 192,
-                RESIZE_MODE::RESIZE_KEEP_ASPECT_LETTERBOX, cv::INTER_LINEAR);
-            for (const auto& l : landmarksRes.landmarks) {
-                cv::circle(frame_landmarks, l, 1, cv::Scalar(0, 255, 255), -1);
+            // auto frameLm = resizeImageExt(frame, 128, 128,
+            //     RESIZE_MODE::RESIZE_KEEP_ASPECT_LETTERBOX, cv::INTER_LINEAR);
+            // cv::circle(frameLm, detectionRes.boxes[0].leftEye, 1, cv::Scalar(0, 0, 255), -1);
+            // cv::circle(frameLm, detectionRes.boxes[0].rightEye, 1, cv::Scalar(0, 0, 255), -1);
+
+            // cv::Mat resizedImage;
+            // cv::resize(frameLm, resizedImage, cv::Size(0, 0), 3.0, 3.0, cv::INTER_CUBIC);
+            // cv::imshow("lm", resizedImage);
+
+            auto rotated = FaceMesh::calculateRotation(landmarksRes.landmarks.leftEye, detectionRes.boxes[0].leftEye, detectionRes.boxes[0].rightEye);
+
+            // auto lmToFrameCoordinates = [top_left = enlargedRect.tl()](std::vector<cv::Point2d>& lm){
+            //     for (auto& l : lm) {
+            //         l += top_left;
+            //     }
+            // };
+            auto& lm = landmarksRes.landmarks;
+            // lmToFrameCoordinates(lm.faceOval);
+            // lmToFrameCoordinates(lm.leftEye);
+            // lmToFrameCoordinates(lm.rightEye);
+            // lmToFrameCoordinates(lm.leftBrow);
+            // lmToFrameCoordinates(lm.rightBrow);
+
+            faces.emplace_back(faceRect, box.confidence, lm);
+
+            std::cout << rotated << std::endl;
+            for (int i = 0; i < rotated.rows; ++i) {
+                std::cout << rotated.at<float>(i, 0) << " " <<  rotated.at<float>(i, 1) << std::endl;
+                cv::circle(frame, enlargedRect.tl() + cv::Point(rotated.at<float>(i, 0) * enlargedRect.width, rotated.at<float>(i, 1) * enlargedRect.height), 3, cv::Scalar(0, 0, 255), -1);
             }
-            cv::imshow("landmarks", frame_landmarks);
         }
         // presenter.drawGraphs(prevFrame);
         // renderMetrics.update(renderingStart);
         // timer.finish("total");
+        // cv::circle(frame, detectionRes.boxes[0].leftEye, 15, cv::Scalar(0, 0, 255), -1);
+        // cv::circle(frame, detectionRes.boxes[0].rightEye, 15, cv::Scalar(0, 0, 255), -1);
+        // cv::circle(frame, detectionRes.boxes[0].nose, 15, cv::Scalar(0, 0, 255), -1);
+        // cv::circle(frame, detectionRes.boxes[0].mouth, 15, cv::Scalar(0, 0, 255), -1);
+        // cv::circle(frame, detectionRes.boxes[0].leftTragion, 15, cv::Scalar(0, 0, 255), -1);
+        // cv::circle(frame, detectionRes.boxes[0].rightTragion, 15, cv::Scalar(0, 0, 255), -1);
 
         // visualizer.draw(frame, faces);
         presenter.drawGraphs(frame);

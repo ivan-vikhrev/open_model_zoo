@@ -21,8 +21,43 @@ struct BBox {
     float top;
     float right;
     float bottom;
+
+    cv::Point leftEye;
+    cv::Point rightEye;
+    cv::Point nose;
+    cv::Point mouth;
+    cv::Point leftTragion;
+    cv::Point rightTragion;
+
     float confidence;
 };
+
+struct FacialLandmarks {
+    std::vector<cv::Point> lips;
+    std::vector<cv::Point> faceOval;
+    std::vector<cv::Point2f> leftEye;
+    std::vector<cv::Point> rightEye;
+    std::vector<cv::Point> leftBrow;
+    std::vector<cv::Point> rightBrow;
+};
+
+struct Face {
+    cv::Rect box;
+    float confidence;
+    FacialLandmarks landmarks;
+
+    Face(cv::Rect box, float conf, FacialLandmarks lm)
+        : box(box), confidence(conf), landmarks(lm) {}
+
+    float width() const {
+        return box.width;
+    }
+
+    float height() const {
+        return box.height;
+    }
+};
+
 
 struct Result {
     virtual ~Result() {}
@@ -43,25 +78,9 @@ struct DetectionResult : Result{
 };
 
 struct LandmarksResult : Result {
-    std::vector<cv::Point> landmarks;
+    FacialLandmarks landmarks;
 };
 
-struct Face {
-    cv::Rect box;
-    float confidence;
-    std::vector<cv::Point> landmarks;
-
-    Face(cv::Rect box, float conf, std::vector<cv::Point> lm)
-        : box(box), confidence(conf), landmarks(lm) {}
-
-    float width() const {
-        return box.width;
-    }
-
-    float height() const {
-        return box.height;
-    }
-};
 
 class TFLiteModel {
 protected:
@@ -137,13 +156,48 @@ private:
 class FaceMesh : public TFLiteModel {
 public:
     FaceMesh(const std::string &modelFile);
-    static cv::Mat enlargeFaceRoi(const cv::Mat& img, cv::Rect roi);
+    static cv::Rect enlargeFaceRoi(cv::Rect roi);
+    static cv::Mat calculateRotation(std::vector<cv::Point2f> lm, cv::Point p1, cv::Point p2);
+
 protected:
     void checkInputsOutputs() override;
     void preprocess(const cv::Mat &img) override;
     std::unique_ptr<Result> postprocess();
 
 private:
+    std::vector<int> lipsIdx = {
+
+    };
+
+    std::vector<int> faceOvalIdx = {
+        10, 338,  297, 332, 284, 251,
+        389, 356, 454, 323, 361, 288,
+        397, 365, 379, 378, 400, 377,
+        152,148,  176, 149, 150, 136,
+        172, 58,  132, 93,  234, 127,
+        162, 21,  54,  103, 67,  109
+    };
+
+    std::vector<int> leftEyeIdx = {
+        33, 7, 163, 144, 145, 153, 154,
+        155, 133, 246, 161, 160, 159,
+        158, 157, 173,
+    };
+
+    std::vector<int> leftBrowIdx = {
+        46, 53, 52, 65, 55, 70, 63, 105, 66, 107
+    };
+
+    std::vector<int> rightBrowIdx = {
+        276, 283, 282, 295, 285, 300, 293, 334, 296, 336
+    };
+
+    std::vector<int> rightEyeIdx = {
+        263, 249, 390, 373, 374, 380,
+        381, 382, 362, 263, 466, 388, 387,
+        386, 385, 384, 398, 362,
+    };
+
     constexpr static double roiEnlargeCoeff = 1.5;
     const cv::Scalar means = {127.5, 127.5, 127.5};
     const cv::Scalar scales = {127.5, 127.5, 127.5};
