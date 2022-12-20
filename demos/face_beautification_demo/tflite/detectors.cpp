@@ -62,7 +62,6 @@ void TFLiteModel::readModel(const std::string &modelFile) {
     if (!model) {
         throw std::runtime_error("Failed to read model " + modelFile);
     }
-    slog::info << "Model name: " << model->GetModel() << slog::endl;
 
     tflite::InterpreterBuilder(*model, resolver)(&interpreter);
     if (!interpreter) {
@@ -81,8 +80,8 @@ void BlazeFace::generateAnchors() {
             repeats += 2;
         }
         size_t stride = ssdModelOptions.strides[layerId];
-        int feature_map_height = ssdModelOptions.inputHeight / stride;
-        int feature_map_width = ssdModelOptions.inputWidth / stride;
+        int feature_map_height = inputHeight / stride;
+        int feature_map_width = inputWidth / stride;
         for(int y = 0; y < feature_map_height; ++y) {
             float y_center = (y + ssdModelOptions.anchorOffsetY) / feature_map_height;
             for(int x = 0; x < feature_map_width; ++x) {
@@ -104,6 +103,16 @@ void TFLiteModel::allocateTensors() {
     interpreter->AllocateTensors();
 }
 
+void TFLiteModel::infer() {
+    interpreter->Invoke();
+}
+
+std::unique_ptr<Result> TFLiteModel::run(const cv::Mat &img) {
+    preprocess(img);
+    infer();
+    return postprocess();
+}
+
 BlazeFace::BlazeFace(const std::string &modelFile, float threshold)
     : TFLiteModel(modelFile),
       confidenceThreshold(threshold) {
@@ -119,21 +128,24 @@ void BlazeFace::checkInputsOutputs() {
     std::string inputName = interpreter->GetInputName(0);
     auto inputTensor = interpreter->input_tensor(0);
     auto dims = inputTensor->dims;
+    inputWidth = dims->data[2];
+    inputHeight = dims->data[1];
+
     if (dims->size != 4) {
         throw std::logic_error("Models input expected to have 4 demensions, not " + std::to_string(dims->size));
     }
-    slog::info << "Inputs:" << slog::endl;
-    slog::info << "\t" << inputName << " : " << getShapeString(*dims) << " "
+    slog::info << "\tInputs:" << slog::endl;
+    slog::info << "\t\t" << inputName << " : " << getShapeString(*dims) << " "
         << tfLiteTypeToStr.at(inputTensor->type) << slog::endl;
 
     if (interpreter->outputs().size() != 2) {
         throw std::logic_error("Model expected to have 2 outputs");
     }
-    slog::info << "Outputs:" << slog::endl;
-    for (int i = 0; i < interpreter->outputs().size(); ++i) {
+    slog::info << "\tOutputs:" << slog::endl;
+    for (size_t i = 0; i < interpreter->outputs().size(); ++i) {
         auto outputTensor = interpreter->output_tensor(i);
         auto dims = outputTensor->dims;
-        slog::info << "\t" << interpreter->GetOutputName(i) << " : " << getShapeString(*dims) <<  " "
+        slog::info << "\t\t" << interpreter->GetOutputName(i) << " : " << getShapeString(*dims) <<  " "
             << tfLiteTypeToStr.at(outputTensor->type) << slog::endl;
         if (dims->data[dims->size - 1] == 16) {
             boxesTensorId = i;
@@ -149,18 +161,18 @@ void BlazeFace::preprocess(const cv::Mat &img) {
     origImageHeight = img.size().height;
     origImageWidth = img.size().width;
 
-    cv::Mat resizedImage = resizeImageExt(img, ssdModelOptions.inputWidth, ssdModelOptions.inputHeight,
+    cv::Mat resizedImage = resizeImageExt(img, inputWidth, inputHeight,
         RESIZE_MODE::RESIZE_KEEP_ASPECT_LETTERBOX, cv::INTER_LINEAR);
 
-    imgScale = std::min(static_cast<double>(ssdModelOptions.inputWidth) / origImageWidth,
-        static_cast<double>(ssdModelOptions.inputHeight) / origImageHeight);
-    xPadding = (ssdModelOptions.inputWidth - std::floor(origImageWidth * imgScale)) / 2;
-    yPadding = (ssdModelOptions.inputHeight -  std::floor(origImageHeight * imgScale)) / 2;
+    imgScale = std::min(static_cast<double>(inputWidth) / origImageWidth,
+        static_cast<double>(inputHeight) / origImageHeight);
+    xPadding = (inputWidth - std::floor(origImageWidth * imgScale)) / 2;
+    yPadding = (inputHeight -  std::floor(origImageHeight * imgScale)) / 2;
 
     resizedImage.convertTo(resizedImage, CV_32F);
     cv::cvtColor(resizedImage, resizedImage, cv::COLOR_BGR2RGB);
-    resizedImage -= ssdModelOptions.means;
-    resizedImage /= cv::Mat(ssdModelOptions.scales);
+    resizedImage -= means;
+    resizedImage /= cv::Mat(scales);
 
     int channelsNum = resizedImage.channels();
     float* inputTensor = interpreter->typed_input_tensor<float>(0);
@@ -172,21 +184,18 @@ void BlazeFace::preprocess(const cv::Mat &img) {
     }
 }
 
-void BlazeFace::infer() {
-    interpreter->Invoke();
-}
 
 void BlazeFace::decodeBoxes(float* boxes) {
     for(int i = 0; i < ssdModelOptions.numBoxes; ++i) {
-        size_t scale = ssdModelOptions.inputHeight;
+        size_t scale = inputHeight;
         size_t num_points = ssdModelOptions.numPoints / 2;
         const int start_pos = i * ssdModelOptions.numPoints;
-        for(int j = 0; j < num_points; ++j) {
-            boxes[start_pos + 2*j]  = boxes[start_pos + 2*j]  / scale;
-            boxes[start_pos + 2*j + 1]  = boxes[start_pos + 2*j + 1] / scale;
+        for(size_t j = 0; j < num_points; ++j) {
+            boxes[start_pos + 2 * j]  = boxes[start_pos + 2 * j]  / scale;
+            boxes[start_pos + 2 * j + 1]  = boxes[start_pos + 2 * j + 1] / scale;
             if (j != 1) {
-                boxes[start_pos + 2*j] += anchors[i].x;
-                boxes[start_pos + 2*j + 1] += anchors[i].y;
+                boxes[start_pos + 2 * j] += anchors[i].x;
+                boxes[start_pos + 2 * j + 1] += anchors[i].y;
             }
         }
 
@@ -205,8 +214,8 @@ void BlazeFace::decodeBoxes(float* boxes) {
     }
 }
 
-std::pair<std::vector<FaceBox>, std::vector<float>> BlazeFace::getDetections(const std::vector<float>& scores, float* boxes) {
-    std::vector<FaceBox> detections;
+std::pair<std::vector<BBox>, std::vector<float>> BlazeFace::getDetections(const std::vector<float>& scores, float* boxes) {
+    std::vector<BBox> detections;
     std::vector<float> filteredScores;
     for(int box_index = 0; box_index < ssdModelOptions.numBoxes; ++box_index) {
         float score = scores[box_index];
@@ -215,29 +224,29 @@ std::pair<std::vector<FaceBox>, std::vector<float>> BlazeFace::getDetections(con
             continue;
         }
 
-        FaceBox detected_object;
-        detected_object.confidence = score;
+        BBox object;
+        object.confidence = score;
 
         const int start_pos = box_index * ssdModelOptions.numPoints;
-        const float x0 = (std::min(std::max(0.0f, boxes[start_pos]), 1.0f) * ssdModelOptions.inputWidth - xPadding) / imgScale;
-        const float y0 = (std::min(std::max(0.0f, boxes[start_pos + 1]), 1.0f) * ssdModelOptions.inputHeight -yPadding) / imgScale;
-        const float x1 = (std::min(std::max(0.0f, boxes[start_pos + 2]), 1.0f) * ssdModelOptions.inputWidth - xPadding) / imgScale;
-        const float y1 = (std::min(std::max(0.0f, boxes[start_pos + 3]), 1.0f) * ssdModelOptions.inputHeight - yPadding) / imgScale;
+        const float x0 = (std::min(std::max(0.0f, boxes[start_pos]), 1.0f) * inputWidth - xPadding) / imgScale;
+        const float y0 = (std::min(std::max(0.0f, boxes[start_pos + 1]), 1.0f) * inputHeight -yPadding) / imgScale;
+        const float x1 = (std::min(std::max(0.0f, boxes[start_pos + 2]), 1.0f) * inputWidth - xPadding) / imgScale;
+        const float y1 = (std::min(std::max(0.0f, boxes[start_pos + 3]), 1.0f) * inputHeight - yPadding) / imgScale;
 
-        detected_object.left = static_cast<int>(round(static_cast<double>(x0)));
-        detected_object.top  = static_cast<int>(round(static_cast<double>(y0)));
-        detected_object.right = static_cast<int>(round(static_cast<double>(x1)));
-        detected_object.bottom = static_cast<int>(round(static_cast<double>(y1)));
+        object.left = static_cast<int>(round(static_cast<double>(x0)));
+        object.top  = static_cast<int>(round(static_cast<double>(y0)));
+        object.right = static_cast<int>(round(static_cast<double>(x1)));
+        object.bottom = static_cast<int>(round(static_cast<double>(y1)));
 
         filteredScores.push_back(score);
-        detections.push_back(detected_object);
+        detections.push_back(object);
     }
 
     return {detections, filteredScores};
 }
 
-std::vector<FaceBox> BlazeFace::postprocess() {
-    std::vector<FaceBox> faces;
+std::unique_ptr<Result> BlazeFace::postprocess() {
+    std::vector<BBox> faces;
     float* boxesPtr = interpreter->typed_output_tensor<float>(boxesTensorId);
     float* scoresPtr = interpreter->typed_output_tensor<float>(scoresTensorId);
 
@@ -246,79 +255,100 @@ std::vector<FaceBox> BlazeFace::postprocess() {
     auto sigmoid = [](float& score) {
         score = 1.f / (1.f + exp(-score));
     };
+
     std::for_each(scores.begin(), scores.end(), sigmoid);
-    auto max_score = *std::max_element(std::begin(scores), std::end(scores));
+    // auto max_score = *std::max_element(std::begin(scores), std::end(scores));
     decodeBoxes(boxesPtr);
 
     auto [detections, filteredScores] = getDetections(scores, boxesPtr);
     std::vector<int> keep = nms(detections, filteredScores, 0.5);
-    std::vector<FaceBox> results;
+    DetectionResult* result = new DetectionResult();
     for(auto& index : keep) {
-        results.push_back(detections[index]);
+        result->boxes.push_back(detections[index]);
     }
-    return results;
+    return std::unique_ptr<Result>(result);
 }
 
-std::vector<FaceBox> BlazeFace::run(const cv::Mat &img) {
-    preprocess(img);
-    infer();
-    return postprocess();
+cv::Mat FaceMesh::enlargeFaceRoi(const cv::Mat& img, cv::Rect roi) {
+    int inflationX = std::lround(roi.width * roiEnlargeCoeff);
+    int inflationY = std::lround(roi.height * roiEnlargeCoeff);
+    roi -= cv::Point(inflationX / 2, inflationY / 2);
+    roi += cv::Size(inflationX, inflationY);
+    return img(roi);
 }
 
-CallStat::CallStat():
-    _number_of_calls(0), _total_duration(0.0), _last_call_duration(0.0), _smoothed_duration(-1.0) {
+FaceMesh::FaceMesh(const std::string &modelFile)
+    : TFLiteModel(modelFile) {
+    checkInputsOutputs();
+    allocateTensors();
 }
 
-double CallStat::getSmoothedDuration() {
-    // Additional check is needed for the first frame while duration of the first
-    // visualisation is not calculated yet.
-    if (_smoothed_duration < 0) {
-        auto t = std::chrono::steady_clock::now();
-        return std::chrono::duration_cast<ms>(t - _last_call_start).count();
+void FaceMesh::checkInputsOutputs() {
+    if (interpreter->inputs().size() != 1) {
+        throw std::logic_error("Model expected to have only one input");
     }
-    return _smoothed_duration;
-}
-
-double CallStat::getTotalDuration() {
-    return _total_duration;
-}
-
-double CallStat::getLastCallDuration() {
-    return _last_call_duration;
-}
-
-void CallStat::calculateDuration() {
-    auto t = std::chrono::steady_clock::now();
-    _last_call_duration = std::chrono::duration_cast<ms>(t - _last_call_start).count();
-    _number_of_calls++;
-    _total_duration += _last_call_duration;
-    if (_smoothed_duration < 0) {
-        _smoothed_duration = _last_call_duration;
+    std::string inputName = interpreter->GetInputName(0);
+    auto inputTensor = interpreter->input_tensor(0);
+    auto dims = inputTensor->dims;
+    inputWidth = dims->data[2];
+    inputHeight = dims->data[1];
+    if (dims->size != 4) {
+        throw std::logic_error("Models input expected to have 4 demensions, not " + std::to_string(dims->size));
     }
-    double alpha = 0.1;
-    _smoothed_duration = _smoothed_duration * (1.0 - alpha) + _last_call_duration * alpha;
-    _last_call_start = t;
-}
+    slog::info << "\tInputs:" << slog::endl;
+    slog::info << "\t\t" << inputName << " : " << getShapeString(*dims) << " "
+        << tfLiteTypeToStr.at(inputTensor->type) << slog::endl;
 
-void CallStat::setStartTime() {
-    _last_call_start = std::chrono::steady_clock::now();
-}
-
-void Timer::start(const std::string& name) {
-    if (_timers.find(name) == _timers.end()) {
-        _timers[name] = CallStat();
+    if (interpreter->outputs().size() != 2) {
+        throw std::logic_error("Model expected to have 2 outputs");
     }
-    _timers[name].setStartTime();
-}
-
-void Timer::finish(const std::string& name) {
-    auto& timer = (*this)[name];
-    timer.calculateDuration();
-}
-
-CallStat& Timer::operator[](const std::string& name) {
-    if (_timers.find(name) == _timers.end()) {
-        throw std::logic_error("No timer with name " + name + ".");
+    slog::info << "\tOutputs:" << slog::endl;
+    for (size_t i = 0; i < interpreter->outputs().size(); ++i) {
+        auto outputTensor = interpreter->output_tensor(i);
+        auto dims = outputTensor->dims;
+        slog::info << "\t\t" << interpreter->GetOutputName(i) << " : " << getShapeString(*dims) <<  " "
+            << tfLiteTypeToStr.at(outputTensor->type) << slog::endl;
     }
-    return _timers[name];
+}
+
+void FaceMesh::preprocess(const cv::Mat &img) {
+    origImageHeight = img.size().height;
+    origImageWidth = img.size().width;
+
+    cv::Mat resizedImage = resizeImageExt(img, 192, 192,
+        RESIZE_MODE::RESIZE_KEEP_ASPECT_LETTERBOX, cv::INTER_LINEAR);
+
+    imgScale = std::min(static_cast<double>(192) / origImageWidth,
+        static_cast<double>(192) / origImageHeight);
+    xPadding = (192 - std::floor(origImageWidth * imgScale)) / 2;
+    yPadding = (192 -  std::floor(origImageHeight * imgScale)) / 2;
+
+    resizedImage.convertTo(resizedImage, CV_32F);
+    cv::cvtColor(resizedImage, resizedImage, cv::COLOR_BGR2RGB);
+    resizedImage -= means;
+    resizedImage /= cv::Mat(scales);
+
+    int channelsNum = resizedImage.channels();
+    float* inputTensor = interpreter->typed_input_tensor<float>(0);
+    float* imgData = resizedImage.ptr<float>();
+    for (int32_t i = 0; i < 192 * 192; i++) {
+        for (int32_t c = 0; c < channelsNum; c++) {
+            inputTensor[i * channelsNum + c] = imgData[i * 3 + c];
+        }
+    }
+}
+
+std::unique_ptr<Result> FaceMesh::postprocess() {
+    std::vector<cv::Point> landmarks;
+    float* landmarksPtr = interpreter->typed_output_tensor<float>(0);
+
+    LandmarksResult* result = new LandmarksResult();
+    for (int i = 0; i < 1404; ++i) {
+        float x = landmarksPtr[i * 3];
+        float y = landmarksPtr[i * 3 + 1];
+
+        result->landmarks.emplace_back(x, y);
+    }
+
+    return std::unique_ptr<Result>(result);
 }

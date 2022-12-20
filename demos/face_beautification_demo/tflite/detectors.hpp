@@ -16,19 +16,50 @@
 #include <vector>
 #include <string>
 
-struct FaceBox {
+struct BBox {
     float left;
     float top;
     float right;
     float bottom;
-
     float confidence;
+};
 
-    float getWidth() const {
-        return (right - left) + 1.0f;
+struct Result {
+    virtual ~Result() {}
+
+    template <class T>
+    T& asRef() {
+        return dynamic_cast<T&>(*this);
     }
-    float getHeight() const {
-        return (bottom - top) + 1.0f;
+
+    template <class T>
+    const T& asRef() const {
+        return dynamic_cast<const T&>(*this);
+    }
+};
+
+struct DetectionResult : Result{
+    std::vector<BBox> boxes;
+};
+
+struct LandmarksResult : Result {
+    std::vector<cv::Point> landmarks;
+};
+
+struct Face {
+    cv::Rect box;
+    float confidence;
+    std::vector<cv::Point> landmarks;
+
+    Face(cv::Rect box, float conf, std::vector<cv::Point> lm)
+        : box(box), confidence(conf), landmarks(lm) {}
+
+    float width() const {
+        return box.width;
+    }
+
+    float height() const {
+        return box.height;
     }
 };
 
@@ -45,117 +76,75 @@ protected:
 
     std::vector<int> inputShape;
 
+    int inputWidth;
+    int inputHeight;
+    int origImageWidth;
+    int origImageHeight;
+
+    double imgScale;
+    int xPadding;
+    int yPadding;
+
     void readModel(const std::string &modelFile);
     virtual void checkInputsOutputs() = 0;
     void allocateTensors();
     virtual void preprocess(const cv::Mat &img) = 0;
-    virtual void infer() = 0;
-    // virtual std::vector<Result> postprocess() = 0;
+    void infer();
+    virtual std::unique_ptr<Result> postprocess() = 0;
 
 public:
     TFLiteModel(const std::string &modelFile);
     virtual ~TFLiteModel() = default;
     void setNumThreads(int nthreads);
-    // virtual std::vector<Result> run(const cv::Mat &img) = 0;
+    std::unique_ptr<Result> run(const cv::Mat &img);
 };
 
-class BlazeFace : TFLiteModel {
+class BlazeFace : public TFLiteModel {
 public:
     BlazeFace(const std::string &modelFile,
                   float threshold);
-    std::vector<FaceBox> run(const cv::Mat &img);
 
 protected:
     void checkInputsOutputs() override;
     void preprocess(const cv::Mat &img) override;
-    void infer() override;
-    std::vector<FaceBox> postprocess();
+    std::unique_ptr<Result> postprocess();
 
 private:
+    int boxesTensorId;
+    int scoresTensorId;
+
     struct {
         int numLayers = 4;
         int numBoxes = 896;
         size_t numPoints = 16;
-        int inputHeight = 128;
-        int inputWidth = 128;
         float anchorOffsetX = 0.5;
         float anchorOffsetY = 0.5;
         std::vector<int> strides = {8, 16, 16, 16};
         double interpolatedScaleAspectRatio = 1.0;
-        cv::Scalar means = {127.5, 127.5, 127.5};
-        cv::Scalar scales = {127.5, 127.5, 127.5};
     } ssdModelOptions;
 
     double confidenceThreshold;
 
-    double imgScale;
-    int origImageWidth;
-    int origImageHeight;
-
-    int boxesTensorId;
-    int scoresTensorId;
-
-    int xPadding;
-    int yPadding;
+    cv::Scalar means = {127.5, 127.5, 127.5};
+    cv::Scalar scales = {127.5, 127.5, 127.5};
 
     std::vector<cv::Point2f> anchors;
     void generateAnchors();
     void decodeBoxes(float* boxes);
-    std::pair<std::vector<FaceBox>, std::vector<float>> getDetections(const std::vector<float>& scores, float* boxes);
+    std::pair<std::vector<BBox>, std::vector<float>> getDetections(const std::vector<float>& scores, float* boxes);
 };
 
-
-
-// struct FacialLandmarksDetection : BaseDetection {
-//     size_t enquedFaces;
-//     std::vector<std::vector<float>> landmarks_results;
-//     std::vector<cv::Rect> faces_bounding_boxes;
-
-//     FacialLandmarksDetection(const std::string &pathToModel,
-//                              bool doRawOutputMessages);
-
-//     void read() override;
-//     // void submitRequest();
-
-//     // void enqueue(const cv::Mat &face);
-//     // std::vector<float> operator[](int idx);
-// };
-
-
-// struct Load {
-//     BaseDetection& detector;
-
-//     explicit Load(BaseDetection& detector);
-
-//     void into(ov::Core& core, const std::string & deviceName) const;
-// };
-
-class CallStat {
+class FaceMesh : public TFLiteModel {
 public:
-    typedef std::chrono::duration<double, std::ratio<1, 1000>> ms;
-
-    CallStat();
-
-    double getSmoothedDuration();
-    double getTotalDuration();
-    double getLastCallDuration();
-    void calculateDuration();
-    void setStartTime();
+    FaceMesh(const std::string &modelFile);
+    static cv::Mat enlargeFaceRoi(const cv::Mat& img, cv::Rect roi);
+protected:
+    void checkInputsOutputs() override;
+    void preprocess(const cv::Mat &img) override;
+    std::unique_ptr<Result> postprocess();
 
 private:
-    size_t _number_of_calls;
-    double _total_duration;
-    double _last_call_duration;
-    double _smoothed_duration;
-    std::chrono::time_point<std::chrono::steady_clock> _last_call_start;
-};
-
-class Timer {
-public:
-    void start(const std::string& name);
-    void finish(const std::string& name);
-    CallStat& operator[](const std::string& name);
-
-private:
-    std::map<std::string, CallStat> _timers;
+    constexpr static double roiEnlargeCoeff = 1.5;
+    const cv::Scalar means = {127.5, 127.5, 127.5};
+    const cv::Scalar scales = {127.5, 127.5, 127.5};
 };

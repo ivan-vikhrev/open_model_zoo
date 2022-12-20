@@ -50,13 +50,13 @@ public:
 
     explicit Visualizer(cv::Size const& imgSize);
 
-    cv::Mat beautify(cv::Mat img, std::list<Face::Ptr> faces, PerformanceMetrics& m);
-    void draw(cv::Mat img, const std::vector<FaceBox>& faces);
+    // cv::Mat beautify(cv::Mat img, std::list<Face::Ptr> faces, PerformanceMetrics& m);
+    void draw(cv::Mat img, const std::vector<Face>& faces);
 
 private:
-    void drawFace(cv::Mat& img, FaceBox face, bool drawContours = true);
-    cv::Mat beautifyFaces(cv::Mat& img, const std::vector<Contour>& facesContours,
-        const std::vector<Contour>& facesElemsContours, PerformanceMetrics& m);
+    void drawFace(cv::Mat& img, Face face, bool drawContours = true);
+    // cv::Mat beautifyFaces(cv::Mat& img, const std::vector<Contour>& facesContours,
+    //     const std::vector<Contour>& facesElemsContours, PerformanceMetrics& m);
     PhotoFrameVisualizer::Ptr photoFrameVisualizer;
 
     cv::Size imgSize;

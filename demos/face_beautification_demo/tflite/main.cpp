@@ -72,7 +72,7 @@ constexpr char u_msg[] = "resource utilization graphs. Default is cdm. "
 DEFINE_string(u, "cdm", u_msg);
 
 constexpr char num_threads_message[] = "Optional. Specify count of threads.";
-DEFINE_uint32(nthreads, 0, num_threads_message);
+DEFINE_int32(nthreads, -1, num_threads_message);
 
 constexpr char num_streams_message[] = "Optional. Specify count of streams.";
 
@@ -120,6 +120,11 @@ void parse(int argc, char *argv[]) {
     slog::info << "TensorFlow Lite" << slog::endl;
     slog::info << "\tversion " << TFLITE_VERSION_STRING << slog::endl;
 }
+
+void renderResults() {
+
+}
+
 } // namespace
 
 int main(int argc, char *argv[]) {
@@ -135,8 +140,13 @@ int main(int argc, char *argv[]) {
 
     // --------------------------- 2. Reading TFlite models and build interpreter ----------------------
     BlazeFace faceDetector(FLAGS_m, FLAGS_t);
-    // Load(faceDetector).into(core, FLAGS_d);
-    // Load(facialLandmarksDetector).into(core, FLAGS_d);
+    faceDetector.setNumThreads(FLAGS_nthreads);
+    slog::info << "\tThreads number:" <<  FLAGS_nthreads << slog::endl;
+
+    FaceMesh facialLandmarks(FLAGS_mlm);
+    facialLandmarks.setNumThreads(FLAGS_nthreads);
+    slog::info << "\tThreads number: " <<  FLAGS_nthreads << slog::endl;
+
     // ----------------------------------------------------------------------------------------------------
     // Timer timer;
     // std::ostringstream out;
@@ -178,15 +188,29 @@ int main(int argc, char *argv[]) {
         }
         framesCounter++;
 
-        std::vector<FaceBox> faces = faceDetector.run(frame);
+        DetectionResult detectionRes = faceDetector.run(frame)->asRef<DetectionResult>();
+        std::vector<Face> faces;
+        for (auto& box : detectionRes.boxes) {
+            cv::Rect faceRect = cv::Rect(cv::Point{static_cast<int>(box.left), static_cast<int>(box.top)},
+                cv::Point{static_cast<int>(box.right), static_cast<int>(box.bottom)});
+            cv::Mat faceRoi = FaceMesh::enlargeFaceRoi(frame, faceRect);
+            cv::imshow("Face", FaceMesh::enlargeFaceRoi(frame, faceRect));
+            LandmarksResult landmarksRes = facialLandmarks.run(FaceMesh::enlargeFaceRoi(frame, faceRect))->asRef<LandmarksResult>();
+            faces.emplace_back(faceRect, box.confidence, landmarksRes.landmarks);
 
+
+            auto frame_landmarks = resizeImageExt(faceRoi, 192, 192,
+                RESIZE_MODE::RESIZE_KEEP_ASPECT_LETTERBOX, cv::INTER_LINEAR);
+            for (const auto& l : landmarksRes.landmarks) {
+                cv::circle(frame_landmarks, l, 1, cv::Scalar(0, 255, 255), -1);
+            }
+            cv::imshow("landmarks", frame_landmarks);
+        }
         // presenter.drawGraphs(prevFrame);
         // renderMetrics.update(renderingStart);
         // timer.finish("total");
-        // frame = resizeImageExt(frame , 128, 128,
-        //     RESIZE_MODE::RESIZE_KEEP_ASPECT_LETTERBOX, cv::INTER_LINEAR);
 
-        visualizer.draw(frame, faces);
+        // visualizer.draw(frame, faces);
         presenter.drawGraphs(frame);
 
         metrics.update(startTime, frame, { 10, 22 }, cv::FONT_HERSHEY_COMPLEX, 0.65);
