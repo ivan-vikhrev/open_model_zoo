@@ -283,6 +283,7 @@ int main(int argc, char *argv[]) {
         // cv::circle(frame, detectionRes.boxes[0].rightTragion, 15, cv::Scalar(0, 0, 255), -1);
 
         visualizer.draw(frame, faces);
+        // cv::Mat beutifiedImg = visualizer.beautify(frame, faces);
         presenter.drawGraphs(frame);
 
         metrics.update(startTime, frame, { 10, 22 }, cv::FONT_HERSHEY_COMPLEX, 0.65);

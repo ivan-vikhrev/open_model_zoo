@@ -432,12 +432,28 @@ std::unique_ptr<Result> FaceMesh::postprocess() {
         }
     };
 
+    // std::sort(faceOvalIdx.begin(), faceOvalIdx.end());
+    // std::sort(leftEyeIdx.begin(), leftEyeIdx.end());
+    // std::sort(rightEyeIdx.begin(), rightEyeIdx.end());
+    // std::sort(leftBrowIdx.begin(), leftBrowIdx.end());
+    // std::sort(rightBrowIdx.begin(), rightBrowIdx.end());
+    // std::sort(lipsIdx.begin(), lipsIdx.end());
+
+    // std::sort(all.begin(), all.end());
+    // std::set<int> s;
+    // for (int i = 0; i < 468; ++i) {
+    //     s.insert(i);
+    // }
+    // std::vector<int> res;
+    // std::set_difference(s.begin(), s.end(), all.begin(), all.end(), std::back_inserter(res));
+
     fillLandmarks(result->landmarks.faceOval, faceOvalIdx);
     fillLandmarks(result->landmarks.leftEye, leftEyeIdx);
     fillLandmarks(result->landmarks.rightEye, rightEyeIdx);
     fillLandmarks(result->landmarks.leftBrow, leftBrowIdx);
     fillLandmarks(result->landmarks.rightBrow, rightBrowIdx);
     fillLandmarks(result->landmarks.lips, lipsIdx);
+    // fillLandmarks(result->landmarks.left, res);
 
     return std::unique_ptr<Result>(result);
 }

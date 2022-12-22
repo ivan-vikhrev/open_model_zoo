@@ -40,6 +40,7 @@ struct FacialLandmarks {
     std::vector<cv::Point> rightBrow;
     std::vector<cv::Point> nose;
     std::vector<cv::Point> lips;
+    std::vector<cv::Point> left;
 };
 
 struct Face {
@@ -49,6 +50,11 @@ struct Face {
 
     Face(cv::Rect box, float conf, FacialLandmarks lm)
         : box(box), confidence(conf), landmarks(lm) {}
+
+    std::vector<std::vector<cv::Point>> getFeatures() const {
+        return {landmarks.leftBrow, landmarks.leftEye, landmarks.rightBrow,
+            landmarks.rightEye, landmarks.nose, landmarks.lips};
+    }
 
     float width() const {
         return box.width;
@@ -207,8 +213,9 @@ private:
 
     std::vector<int> leftEyeIdx = {
         33, 7, 163, 144, 145, 153, 154,
-        155, 133, 246, 161, 160, 159,
-        158, 157, 173,
+        155, 133,
+        113, 225, 224, 223, 222, 56, 173
+        //246, 161, 160, 159, 158, 157, 173,
     };
 
     std::vector<int> leftBrowIdx = {
@@ -217,8 +224,9 @@ private:
 
     std::vector<int> rightEyeIdx = {
         263, 249, 390, 373, 374, 380,
-        381, 382, 362, 263, 466, 388, 387,
-        386, 385, 384, 398, 362,
+        381, 382, 362, 263, 463,
+        413, 441, 442, 443, 444, 445, 342
+        // 466, 388, 387, 386, 385, 384, 398, 362,
     };
 
    std::vector<int> rightBrowIdx = {
@@ -226,17 +234,45 @@ private:
     };
 
     const std::vector<int> noseIdx = {
-
+        2, 99, 240, 235, 219, 218, 237, 44, 19,
+        274, 457, 438, 392, 289, 305, 290, 462, 370
     };
 
-    const std::vector<int> lipsIdx = {
+    std::vector<int> lipsIdx = {
+        61, 146, 91, 181, 84, 17, 314,
+        405, 321, 375, 291, 61, 185, 40,
+        39, 37, 0, 267, 269, 270, 409,
+        291, 78, 95, 88, 178, 87, 14, 317,
+        402, 318, 324, 308, 78, 191, 80,
+        81, 82, 13, 312, 311, 310, 415, 308
+    };
+
+    std::vector<int> left = {
+        //1, 2, 3, 4, 5, 6 // vertical line nose
+    };
+
+    std::set<int> all = {
         61, 146, 91, 181, 84, 17, 314,
         405, 321, 375, 291, 61, 185, 40,
         39, 37, 0, 267, 269,
         270, 409, 291, 78, 95, 88,
         178, 87, 14, 317, 402, 318,
         324, 308, 78, 191, 80, 81, 82, 13,
-        312, 311, 310, 415, 308
+        312, 311, 310, 415, 308,
+         276, 283, 282, 295, 285, 300, 293, 334, 296, 336,
+        263, 249, 390, 373, 374, 380,
+        381, 382, 362, 263, 466, 388, 387,
+        386, 385, 384, 398, 362,
+        46, 53, 52, 65, 55, 70, 63, 105, 66, 107,
+        33, 7, 163, 144, 145, 153, 154,
+        155, 133, 246, 161, 160, 159,
+        158, 157, 173,
+        10, 338,  297, 332, 284, 251,
+        389, 356, 454, 323, 361, 288,
+        397, 365, 379, 378, 400, 377,
+        152,148,  176, 149, 150, 136,
+        172, 58,  132, 93,  234, 127,
+        162, 21,  54,  103, 67,  109
     };
 
     constexpr static double roiEnlargeCoeff = 1.5;
