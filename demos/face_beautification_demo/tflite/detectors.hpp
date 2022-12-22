@@ -22,8 +22,8 @@ struct BBox {
     float right;
     float bottom;
 
-    cv::Point leftEye;
-    cv::Point rightEye;
+    cv::Point2f leftEye;
+    cv::Point2f rightEye;
     cv::Point nose;
     cv::Point mouth;
     cv::Point leftTragion;
@@ -33,12 +33,13 @@ struct BBox {
 };
 
 struct FacialLandmarks {
-    std::vector<cv::Point> lips;
     std::vector<cv::Point> faceOval;
-    std::vector<cv::Point2f> leftEye;
-    std::vector<cv::Point> rightEye;
+    std::vector<cv::Point> leftEye;
     std::vector<cv::Point> leftBrow;
+    std::vector<cv::Point> rightEye;
     std::vector<cv::Point> rightBrow;
+    std::vector<cv::Point> nose;
+    std::vector<cv::Point> lips;
 };
 
 struct Face {
@@ -81,6 +82,27 @@ struct LandmarksResult : Result {
     FacialLandmarks landmarks;
 };
 
+struct MetaData {
+    virtual ~MetaData() {}
+
+    template <class T>
+    T& asRef() {
+        return dynamic_cast<T&>(*this);
+    }
+
+    template <class T>
+    const T& asRef() const {
+        return dynamic_cast<const T&>(*this);
+    }
+};
+
+struct FaceMeshData : public MetaData {
+    cv::Rect faceRect;
+    cv::Point2f leftEye;
+    cv::Point2f rightEye;
+    FaceMeshData(cv::Rect faceRect, cv::Point leftEye, cv::Point rightEye) :
+        faceRect(faceRect), leftEye(leftEye), rightEye(rightEye) {}
+};
 
 class TFLiteModel {
 protected:
@@ -92,6 +114,7 @@ protected:
     std::unique_ptr<tflite::Interpreter> interpreter;
     std::unique_ptr<tflite::FlatBufferModel> model;
     tflite::ops::builtin::BuiltinOpResolver resolver;
+    std::shared_ptr<MetaData> metaData;
 
     std::vector<int> inputShape;
 
@@ -101,8 +124,8 @@ protected:
     int origImageHeight;
 
     double imgScale;
-    int xPadding;
-    int yPadding;
+    double xPadding;
+    double yPadding;
 
     void readModel(const std::string &modelFile);
     virtual void checkInputsOutputs() = 0;
@@ -115,7 +138,7 @@ public:
     TFLiteModel(const std::string &modelFile);
     virtual ~TFLiteModel() = default;
     void setNumThreads(int nthreads);
-    std::unique_ptr<Result> run(const cv::Mat &img);
+    std::unique_ptr<Result> run(const cv::Mat &img, const std::shared_ptr<MetaData>& metaData = nullptr);
 };
 
 class BlazeFace : public TFLiteModel {
@@ -156,8 +179,6 @@ private:
 class FaceMesh : public TFLiteModel {
 public:
     FaceMesh(const std::string &modelFile);
-    static cv::Rect enlargeFaceRoi(cv::Rect roi);
-    static cv::Mat calculateRotation(std::vector<cv::Point2f> lm, cv::Point p1, cv::Point p2);
 
 protected:
     void checkInputsOutputs() override;
@@ -165,9 +186,15 @@ protected:
     std::unique_ptr<Result> postprocess();
 
 private:
-    std::vector<int> lipsIdx = {
+    int faceRoiWidth;
+    int faceRoiHeight;
+    double rotationRad;
+    cv::Point2f rotationCenter;
 
-    };
+    cv::Rect enlargeFaceRoi(cv::Rect roi);
+    double calculateRotationRad(cv::Point p0, cv::Point p1);
+    std::vector<cv::Point2f> rotatePoints(std::vector<cv::Point2f> pts, double rad, cv::Point2f rotCenter);
+
 
     std::vector<int> faceOvalIdx = {
         10, 338,  297, 332, 284, 251,
@@ -188,17 +215,31 @@ private:
         46, 53, 52, 65, 55, 70, 63, 105, 66, 107
     };
 
-    std::vector<int> rightBrowIdx = {
-        276, 283, 282, 295, 285, 300, 293, 334, 296, 336
-    };
-
     std::vector<int> rightEyeIdx = {
         263, 249, 390, 373, 374, 380,
         381, 382, 362, 263, 466, 388, 387,
         386, 385, 384, 398, 362,
     };
 
+   std::vector<int> rightBrowIdx = {
+        276, 283, 282, 295, 285, 300, 293, 334, 296, 336
+    };
+
+    const std::vector<int> noseIdx = {
+
+    };
+
+    const std::vector<int> lipsIdx = {
+        61, 146, 91, 181, 84, 17, 314,
+        405, 321, 375, 291, 61, 185, 40,
+        39, 37, 0, 267, 269,
+        270, 409, 291, 78, 95, 88,
+        178, 87, 14, 317, 402, 318,
+        324, 308, 78, 191, 80, 81, 82, 13,
+        312, 311, 310, 415, 308
+    };
+
     constexpr static double roiEnlargeCoeff = 1.5;
     const cv::Scalar means = {127.5, 127.5, 127.5};
-    const cv::Scalar scales = {127.5, 127.5, 127.5};
+    const cv::Scalar scales = {255.0, 255.0, 255.0};
 };

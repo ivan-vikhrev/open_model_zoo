@@ -111,7 +111,8 @@ void TFLiteModel::infer() {
     interpreter->Invoke();
 }
 
-std::unique_ptr<Result> TFLiteModel::run(const cv::Mat &img) {
+std::unique_ptr<Result> TFLiteModel::run(const cv::Mat &img, const std::shared_ptr<MetaData>& metaData) {
+    this->metaData = metaData;
     preprocess(img);
     infer();
     return postprocess();
@@ -170,8 +171,8 @@ void BlazeFace::preprocess(const cv::Mat &img) {
 
     imgScale = std::min(static_cast<double>(inputWidth) / origImageWidth,
         static_cast<double>(inputHeight) / origImageHeight);
-    xPadding = (inputWidth - std::floor(origImageWidth * imgScale)) / 2;
-    yPadding = (inputHeight -  std::floor(origImageHeight * imgScale)) / 2;
+    xPadding = (inputWidth - std::floor(origImageWidth * imgScale)) / (2 * inputWidth);
+    yPadding = (inputHeight -  std::floor(origImageHeight * imgScale)) / (2 * inputHeight);
 
     resizedImage.convertTo(resizedImage, CV_32F);
     cv::cvtColor(resizedImage, resizedImage, cv::COLOR_BGR2RGB);
@@ -230,41 +231,42 @@ std::pair<std::vector<BBox>, std::vector<float>> BlazeFace::getDetections(const 
 
         BBox object;
         object.confidence = score;
-
+        float xScale = 1 - (xPadding * 2);
+        float yScale = 1 - (yPadding * 2);
         const int start_pos = box_index * ssdModelOptions.numPoints;
-        const float x0 = (boxes[start_pos] * inputWidth - xPadding) / imgScale;
-        const float y0 = (boxes[start_pos + 1] * inputHeight -yPadding) / imgScale;
-        const float x1 = (boxes[start_pos + 2] * inputWidth - xPadding) / imgScale;
-        const float y1 = (boxes[start_pos + 3] * inputHeight - yPadding) / imgScale;
+        const float x0 = (boxes[start_pos] - xPadding) / xScale; // (std::min(std::max(0.0f, boxes[start_pos]), 1.0f) * inputWidth - xPadding);
+        const float y0 = (boxes[start_pos + 1]- yPadding) / yScale; //(std::min(std::max(0.0f, boxes[start_pos + 1]), 1.0f) * inputHeight -yPadding);
+        const float x1 = (boxes[start_pos + 2] - xPadding) / xScale; // (std::min(std::max(0.0f, boxes[start_pos + 2]), 1.0f) * inputWidth - xPadding);
+        const float y1 = (boxes[start_pos + 3] - yPadding) / yScale; //(std::min(std::max(0.0f, boxes[start_pos + 3]), 1.0f) * inputHeight - yPadding);
 
-        const float xLeftEye = (boxes[start_pos + 4] * inputWidth - xPadding) / imgScale;
-        const float yLeftEye = (boxes[start_pos + 5] * inputHeight - yPadding) / imgScale;
+        const float xLeftEye = (boxes[start_pos + 4] - xPadding) / xScale;; //(std::min(std::max(0.0f, boxes[start_pos + 4]), 1.0f) * inputWidth - xPadding) / imgScale;
+        const float yLeftEye = (boxes[start_pos + 5] - yPadding) / yScale; //(std::min(std::max(0.0f, boxes[start_pos + 5]), 1.0f) * inputHeight - yPadding) / imgScale;
 
-        const float xRightEye = (boxes[start_pos + 6] * inputWidth - xPadding) / imgScale;
-        const float yRightEye = (boxes[start_pos + 7] * inputHeight - yPadding) / imgScale;
+        const float xRightEye = (boxes[start_pos + 6] - xPadding) / xScale; // (std::min(std::max(0.0f, boxes[start_pos + 6]), 1.0f) * inputWidth - xPadding) / imgScale;
+        const float yRightEye = (boxes[start_pos + 7] - yPadding) / yScale; //(std::min(std::max(0.0f, boxes[start_pos + 7]), 1.0f) * inputHeight - yPadding) / imgScale;
 
-        const float xNose = (boxes[start_pos + 8] * inputWidth - xPadding) / imgScale;
-        const float yNose = (boxes[start_pos + 9] * inputHeight - yPadding) / imgScale;
+        const float xNose = (std::min(std::max(0.0f, boxes[start_pos + 8]), 1.0f) * inputWidth - xPadding) / imgScale;
+        const float yNose = (std::min(std::max(0.0f, boxes[start_pos + 9]), 1.0f) * inputHeight - yPadding) / imgScale;
 
-        const float xMouth = (boxes[start_pos + 10] * inputWidth - xPadding) / imgScale;
-        const float yMouth = (boxes[start_pos + 11] * inputHeight - yPadding) / imgScale;
+        const float xMouth = (std::min(std::max(0.0f, boxes[start_pos + 10]), 1.0f) * inputWidth - xPadding) / imgScale;
+        const float yMouth = (std::min(std::max(0.0f, boxes[start_pos + 11]), 1.0f) * inputHeight - yPadding) / imgScale;
 
-        const float xLeftTragion = (boxes[start_pos + 12] * inputWidth - xPadding) / imgScale;
-        const float yLeftTragion  = (boxes[start_pos + 13] * inputHeight - yPadding) / imgScale;
+        const float xLeftTragion = (std::min(std::max(0.0f, boxes[start_pos + 12]), 1.0f) * inputWidth - xPadding) / imgScale;
+        const float yLeftTragion  = (std::min(std::max(0.0f, boxes[start_pos + 13]), 1.0f) * inputHeight - yPadding) / imgScale;
 
-        const float xRightTragion = (boxes[start_pos + 14] * inputWidth - xPadding) / imgScale;
-        const float yRightTragion = (boxes[start_pos + 15] * inputHeight - yPadding) / imgScale;
+        const float xRightTragion = (std::min(std::max(0.0f, boxes[start_pos + 14]), 1.0f) * inputWidth - xPadding) / imgScale;
+        const float yRightTragion = (std::min(std::max(0.0f, boxes[start_pos + 15]), 1.0f) * inputHeight - yPadding) / imgScale;
 
 
-        object.left = clamp(x0, 0.f, static_cast<float>(origImageWidth));
-        object.top  = clamp(y0, 0.f, static_cast<float>(origImageHeight));
-        object.right = clamp(x1, 0.f, static_cast<float>(origImageWidth));
-        object.bottom = clamp(y1, 0.f, static_cast<float>(origImageHeight));
+        object.left = x0 * origImageWidth; //clamp(x0, 0.f, static_cast<float>(origImageWidth)) / imgScale;
+        object.top  = y0 * origImageHeight; //clamp(y0, 0.f, static_cast<float>(origImageHeight)) / imgScale;
+        object.right = x1 * origImageWidth; //clamp(x1, 0.f, static_cast<float>(origImageWidth)) / imgScale;
+        object.bottom = y1 * origImageHeight; //clamp(y1, 0.f, static_cast<float>(origImageHeight)) / imgScale;
 
-        object.leftEye = {clamp(xLeftEye, 0.f, static_cast<float>(origImageWidth)),
-             clamp(yLeftEye, 0.f, static_cast<float>(origImageHeight))};
-        object.rightEye = {clamp(xRightEye, 0.f, static_cast<float>(origImageWidth)),
-             clamp(yRightEye, 0.f, static_cast<float>(origImageHeight))};
+        object.leftEye = {clamp(xLeftEye * origImageWidth, 0.f, static_cast<float>(origImageWidth)),
+             clamp(yLeftEye * origImageHeight, 0.f, static_cast<float>(origImageHeight))};
+        object.rightEye = {clamp(xRightEye * origImageWidth, 0.f, static_cast<float>(origImageWidth)),
+             clamp(yRightEye * origImageHeight, 0.f, static_cast<float>(origImageHeight))};
         object.nose = {clamp(xNose, 0.f, static_cast<float>(origImageWidth)),
              clamp(yNose, 0.f, static_cast<float>(origImageHeight))};
         object.mouth = {clamp(xMouth, 0.f, static_cast<float>(origImageWidth)),
@@ -305,33 +307,6 @@ std::unique_ptr<Result> BlazeFace::postprocess() {
     return std::unique_ptr<Result>(result);
 }
 
-cv::Rect FaceMesh::enlargeFaceRoi(cv::Rect roi) {
-    int inflationX = std::lround(roi.width * roiEnlargeCoeff) - roi.width;
-    int inflationY = std::lround(roi.height * roiEnlargeCoeff) - roi.height;
-    roi -= cv::Point(inflationX / 2, inflationY / 2);
-    roi += cv::Size(inflationX, inflationY);
-    return roi;
-}
-
-cv::Mat FaceMesh::calculateRotation(std::vector<cv::Point2f> lm, cv::Point p1, cv::Point p2) {
-    double angle = -std::atan2(p1.y - p2.y, p2.x - p1.x);
-    double rotation = angle - 2 * M_PI * std::floor((angle + M_PI) / (2 * M_PI));
-    double sin = std::sin(rotation);
-    double cos = std::cos(rotation);
-    std::vector<float> data = {(float)cos, (float)sin, (float)-sin, (float)cos};
-    cv::Mat rotMat{2, 2, CV_32F, data.data()};
-    cv::Mat m(lm.size(), 2, CV_32F, lm.data());
-    // std::cout << m << std::endl;
-    // m -= cv::Scalar(0.5, 0.5);
-    // m.convertTo(m, CV_32F2)
-
-    std::cout << m << std::endl;
-    std::cout << rotMat << std::endl;
-    cv::Mat rotated = m * rotMat;
-
-    return rotated;
-}
-
 FaceMesh::FaceMesh(const std::string &modelFile)
     : TFLiteModel(modelFile) {
     checkInputsOutputs();
@@ -366,27 +341,74 @@ void FaceMesh::checkInputsOutputs() {
     }
 }
 
+cv::Rect FaceMesh::enlargeFaceRoi(cv::Rect roi) {
+    int inflationX = std::lround(roi.width * roiEnlargeCoeff) - roi.width;
+    int inflationY = std::lround(roi.height * roiEnlargeCoeff) - roi.height;
+    roi -= cv::Point(inflationX / 2, inflationY / 2);
+    roi += cv::Size(inflationX, inflationY);
+    return roi;
+}
+
+double FaceMesh::calculateRotationRad(cv::Point p0, cv::Point p1) {
+    double rad = -std::atan2(p0.y - p1.y, p1.x - p0.x);
+    double radNormed = rad - 2 * M_PI * std::floor((rad + M_PI) / (2 * M_PI));  // normalized to [0, 2*PI]
+    return radNormed;
+}
+
+std::vector<cv::Point2f> FaceMesh::rotatePoints(std::vector<cv::Point2f> pts, double rad, cv::Point2f rotCenter) {
+    double sin = std::sin(rad);
+    double cos = std::cos(rad);
+    for (auto& p : pts) {
+        p -= rotCenter;
+        float x = p.x * cos - p.y * sin;
+        float y = p.x * sin + p.y * cos;
+        p = {x, y};
+        p += rotCenter;
+    }
+
+    return pts;
+}
+
 void FaceMesh::preprocess(const cv::Mat &img) {
     origImageHeight = img.size().height;
     origImageWidth = img.size().width;
+    FaceMeshData mdata = metaData->asRef<FaceMeshData>();
 
-    cv::Mat resizedImage = resizeImageExt(img, 192, 192,
-        RESIZE_MODE::RESIZE_KEEP_ASPECT_LETTERBOX, cv::INTER_LINEAR);
+    cv::Rect faceRect = mdata.faceRect;
+    faceRect = FaceMesh::enlargeFaceRoi(faceRect) & cv::Rect({}, img.size());
+    faceRoiWidth = faceRect.width;
+    faceRoiHeight = faceRect.height;
+    rotationCenter = (faceRect.tl() + faceRect.br()) * 0.5;
 
-    imgScale = std::min(static_cast<double>(192) / origImageWidth,
-        static_cast<double>(192) / origImageHeight);
-    xPadding = (192 - std::floor(origImageWidth * imgScale)) / 2;
-    yPadding = (192 -  std::floor(origImageHeight * imgScale)) / 2;
+    std::vector<cv::Point2f> dstPoints = {
+        {0, 0},
+        {192, 0},
+        {192, 192},
+        {0, 192}
+    };
+    std::vector<cv::Point2f> srcPoints = {
+        faceRect.tl(),
+        faceRect.tl() + cv::Point{faceRect.width, 0},
+        faceRect.br(),
+        faceRect.br() - cv::Point{faceRect.width, 0},
+    };
 
+    rotationRad = calculateRotationRad(mdata.leftEye, mdata.rightEye);
+    srcPoints = rotatePoints(srcPoints, rotationRad, rotationCenter);
+    auto lambda = cv::getPerspectiveTransform(srcPoints, dstPoints);
+    cv::Mat resizedImage;
+    warpPerspective(img, resizedImage, lambda, {inputWidth, inputHeight});
+    // cv::imshow("transformed", resizedImage);
+    // cv::waitKey(0);
     resizedImage.convertTo(resizedImage, CV_32F);
     cv::cvtColor(resizedImage, resizedImage, cv::COLOR_BGR2RGB);
-    resizedImage -= means;
+
     resizedImage /= cv::Mat(scales);
 
     int channelsNum = resizedImage.channels();
     float* inputTensor = interpreter->typed_input_tensor<float>(0);
     float* imgData = resizedImage.ptr<float>();
-    for (int32_t i = 0; i < 192 * 192; i++) {
+    for (int32_t i = 0; i < inputWidth * inputHeight; i++) {
         for (int32_t c = 0; c < channelsNum; c++) {
             inputTensor[i * channelsNum + c] = imgData[i * 3 + c];
         }
@@ -394,25 +416,28 @@ void FaceMesh::preprocess(const cv::Mat &img) {
 }
 
 std::unique_ptr<Result> FaceMesh::postprocess() {
-    std::vector<cv::Point> landmarks;
     float* landmarksPtr = interpreter->typed_output_tensor<float>(0);
-
     LandmarksResult* result = new LandmarksResult();
-    auto fillLandmarks = [this, landmarksPtr](std::vector<cv::Point2f>& lm, const std::vector<int>& ids) {
+    auto fillLandmarks = [this, landmarksPtr](std::vector<cv::Point>& lms, const std::vector<int>& ids) {
         for (int i : ids) {
-            float x = (landmarksPtr[i * 3] - xPadding) / 192;;
-            float y = (landmarksPtr[i * 3 + 1] - yPadding) / 192;
-            lm.emplace_back(clamp(x, 0.f, static_cast<float>(origImageWidth)),
-                clamp(y, 0.f, static_cast<float>(origImageHeight)));
+            // normalize
+            float x = (landmarksPtr[i * 3]) / inputWidth;
+            float y = (landmarksPtr[i * 3 + 1]) / inputHeight;
+            // rotate
+            cv::Point2f p = rotatePoints({{x, y}}, rotationRad, {0.5, 0.5}).front();
+            // rotX *= origImageHeight;
+            // rotY *= origImageHeight;
+            lms.emplace_back(clamp(p.x * faceRoiWidth + rotationCenter.x - faceRoiWidth / 2, 0.f, static_cast<float>(origImageWidth)),
+                clamp(p.y * faceRoiHeight + rotationCenter.y - faceRoiHeight / 2, 0.f, static_cast<float>(origImageHeight)));
         }
     };
 
-    // fillLandmarks(result->landmarks.faceOval, faceOvalIdx);
+    fillLandmarks(result->landmarks.faceOval, faceOvalIdx);
     fillLandmarks(result->landmarks.leftEye, leftEyeIdx);
-    // fillLandmarks(result->landmarks.rightEye, rightEyeIdx);
-    // fillLandmarks(result->landmarks.leftBrow, leftBrowIdx);
-    // fillLandmarks(result->landmarks.rightBrow, rightBrowIdx);
-    // fillLandmarks(result->lips, lipsIdx);
+    fillLandmarks(result->landmarks.rightEye, rightEyeIdx);
+    fillLandmarks(result->landmarks.leftBrow, leftBrowIdx);
+    fillLandmarks(result->landmarks.rightBrow, rightBrowIdx);
+    fillLandmarks(result->landmarks.lips, lipsIdx);
 
     return std::unique_ptr<Result>(result);
 }

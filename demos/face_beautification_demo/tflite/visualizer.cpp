@@ -57,19 +57,22 @@ void Visualizer::drawFace(cv::Mat& img, Face face, bool drawContours) {
     putHighlightedText(img, out.str(), textPos, cv::FONT_HERSHEY_COMPLEX_SMALL, 1.5, color, 2);
 
     for (const auto& l : face.landmarks.faceOval) {
-        cv::circle(img, l, 1, cv::Scalar(0, 255, 255), -1);
+        cv::circle(img, l, 2, cv::Scalar(0, 255, 255), -1);
     }
     for (const auto& l : face.landmarks.leftEye) {
-        cv::circle(img, l, 1, cv::Scalar(0, 255, 255), -1);
+        cv::circle(img, l, 2, cv::Scalar(0, 255, 255), -1);
     }
     for (const auto& l : face.landmarks.rightEye) {
-        cv::circle(img, l, 1, cv::Scalar(0, 255, 255), -1);
+        cv::circle(img, l, 2, cv::Scalar(0, 255, 255), -1);
     }
     for (const auto& l : face.landmarks.leftBrow) {
-        cv::circle(img, l, 1, cv::Scalar(0, 255, 255), -1);
+        cv::circle(img, l, 2, cv::Scalar(0, 255, 255), -1);
     }
     for (const auto& l : face.landmarks.rightBrow) {
-        cv::circle(img, l, 1, cv::Scalar(0, 255, 255), -1);
+        cv::circle(img, l, 2, cv::Scalar(0, 255, 255), -1);
+    }
+    for (const auto& l : face.landmarks.lips) {
+        cv::circle(img, l, 2, cv::Scalar(0, 255, 255), -1);
     }
 
     photoFrameVisualizer->draw(img, face.box, color);

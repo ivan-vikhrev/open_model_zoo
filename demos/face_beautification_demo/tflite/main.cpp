@@ -193,13 +193,32 @@ int main(int argc, char *argv[]) {
         for (auto& box : detectionRes.boxes) {
             cv::Rect faceRect = cv::Rect(cv::Point{static_cast<int>(box.left), static_cast<int>(box.top)},
                 cv::Point{static_cast<int>(box.right), static_cast<int>(box.bottom)});
-            cv::Rect enlargedRect = FaceMesh::enlargeFaceRoi(faceRect) & cv::Rect({}, frame.size());
-            // cv::imshow("Face", frame(enlargedRect));
-            LandmarksResult landmarksRes = facialLandmarksDetector.run(frame(enlargedRect))->asRef<LandmarksResult>();
+            // cv::Rect enlargedRect = FaceMesh::enlargeFaceRoi(faceRect) & cv::Rect({}, frame.size());
+            // // cv::imshow("Face", frame(enlargedRect));
+            // std::vector<cv::Point2f> dstPoints = {
+            //     {0, 0},
+            //     {192, 0},
+            //     {192, 192},
+            //     {0, 192}
+            // };
+            // std::vector<cv::Point2f> srcPoints = {
+            //     enlargedRect.tl(),
+            //     enlargedRect.tl() + cv::Point{enlargedRect.width, 0},
+            //     enlargedRect.br(),
+            //     enlargedRect.br() - cv::Point{enlargedRect.width, 0},
+            // };
 
+            // cv::Point2f rectCenter = (enlargedRect.br() + enlargedRect.tl()) * 0.5;
 
-            // auto frameLm = resizeImageExt(frame, 128, 128,
-            //     RESIZE_MODE::RESIZE_KEEP_ASPECT_LETTERBOX, cv::INTER_LINEAR);
+            // srcPoints = FaceMesh::calculateRotation(srcPoints, rectCenter, detectionRes.boxes[0].leftEye, detectionRes.boxes[0].rightEye);
+
+            // auto lambda = cv::getPerspectiveTransform(srcPoints, dstPoints);
+            // cv::Mat uprightFace;
+            // warpPerspective(frame, uprightFace, lambda, {192, 192});
+            // cv::imshow("transformed", uprightFace);
+            LandmarksResult landmarksRes = facialLandmarksDetector.run(frame,
+                std::make_shared<FaceMeshData>(faceRect, box.leftEye, box.rightEye))->asRef<LandmarksResult>();
+
             // cv::circle(frameLm, detectionRes.boxes[0].leftEye, 1, cv::Scalar(0, 0, 255), -1);
             // cv::circle(frameLm, detectionRes.boxes[0].rightEye, 1, cv::Scalar(0, 0, 255), -1);
 
@@ -207,27 +226,51 @@ int main(int argc, char *argv[]) {
             // cv::resize(frameLm, resizedImage, cv::Size(0, 0), 3.0, 3.0, cv::INTER_CUBIC);
             // cv::imshow("lm", resizedImage);
 
-            auto rotated = FaceMesh::calculateRotation(landmarksRes.landmarks.leftEye, detectionRes.boxes[0].leftEye, detectionRes.boxes[0].rightEye);
+            // lm.leftEye = FaceMesh::calculateRotation(lm.leftEye, rectCenter, detectionRes.boxes[0].leftEye, detectionRes.boxes[0].rightEye); // landmarksRes.landmarks.leftEye
 
-            // auto lmToFrameCoordinates = [top_left = enlargedRect.tl()](std::vector<cv::Point2d>& lm){
+            // auto frameLm = resizeImageExt(frame(enlargedRect), 192, 192,
+            //     RESIZE_MODE::RESIZE_FILL, cv::INTER_LINEAR);
+
+            // for (const auto& l : lm.faceOval) {
+            //     cv::circle(frameLm, l, 2, cv::Scalar(0, 255, 255), -1);
+            // }
+            // for (const auto& l : lm.leftEye) {
+            //     cv::circle(frameLm, l, 2, cv::Scalar(0, 255, 255), -1);
+            // }
+            // for (const auto& l : lm.rightEye) {
+            //     cv::circle(frameLm, l, 2, cv::Scalar(0, 255, 255), -1);
+            // }
+            // for (const auto& l : lm.leftBrow) {
+            //     cv::circle(frameLm, l, 2, cv::Scalar(0, 255, 255), -1);
+            // }
+            // for (const auto& l : lm.rightBrow) {
+            //     cv::circle(frameLm, l, 2, cv::Scalar(0, 255, 255), -1);
+            // }
+            // cv::imshow("lm", frameLm);
+            // lm.leftBrow = FaceMesh::calculateRotation(lm.leftBrow, rectCenter,detectionRes.boxes[0].leftEye, detectionRes.boxes[0].rightEye);
+            // lm.rightEye = FaceMesh::calculateRotation(lm.rightEye, rectCenter, detectionRes.boxes[0].leftEye, detectionRes.boxes[0].rightEye);
+            // lm.rightBrow = FaceMesh::calculateRotation(lm.rightBrow, rectCenter,detectionRes.boxes[0].leftEye, detectionRes.boxes[0].rightEye);
+            // lm.faceOval = FaceMesh::calculateRotation(lm.faceOval, rectCenter, detectionRes.boxes[0].leftEye, detectionRes.boxes[0].rightEye);
+            auto& lm = landmarksRes.landmarks;
+            // auto lmToFrameCoordinates = [topLeft = enlargedRect.tl()](std::vector<cv::Point>& lm){
             //     for (auto& l : lm) {
-            //         l += top_left;
+            //         l += topLeft;
             //     }
             // };
-            auto& lm = landmarksRes.landmarks;
             // lmToFrameCoordinates(lm.faceOval);
             // lmToFrameCoordinates(lm.leftEye);
             // lmToFrameCoordinates(lm.rightEye);
             // lmToFrameCoordinates(lm.leftBrow);
             // lmToFrameCoordinates(lm.rightBrow);
-
+            // FacialLandmarks lm = {};
             faces.emplace_back(faceRect, box.confidence, lm);
 
-            std::cout << rotated << std::endl;
-            for (int i = 0; i < rotated.rows; ++i) {
-                std::cout << rotated.at<float>(i, 0) << " " <<  rotated.at<float>(i, 1) << std::endl;
-                cv::circle(frame, enlargedRect.tl() + cv::Point(rotated.at<float>(i, 0) * enlargedRect.width, rotated.at<float>(i, 1) * enlargedRect.height), 3, cv::Scalar(0, 0, 255), -1);
-            }
+            // std::cout << rotated << std::endl;
+            // for (int i = 0; i < rotated.rows; ++i) {
+            //     std::cout << rotated.at<float>(i, 0) << " " <<  rotated.at<float>(i, 1) << std::endl;
+            //     cv::circle(frame, 0.5 * (enlargedRect.br() + enlargedRect.tl()) + cv::Point(rotated.at<float>(i, 0) * enlargedRect.width, rotated.at<float>(i, 1) * enlargedRect.width), 3, cv::Scalar(0, 0, 255), -1);
+            // }
+            // cv::imshow("lm", frame(enlargedRect));
         }
         // presenter.drawGraphs(prevFrame);
         // renderMetrics.update(renderingStart);
@@ -239,7 +282,7 @@ int main(int argc, char *argv[]) {
         // cv::circle(frame, detectionRes.boxes[0].leftTragion, 15, cv::Scalar(0, 0, 255), -1);
         // cv::circle(frame, detectionRes.boxes[0].rightTragion, 15, cv::Scalar(0, 0, 255), -1);
 
-        // visualizer.draw(frame, faces);
+        visualizer.draw(frame, faces);
         presenter.drawGraphs(frame);
 
         metrics.update(startTime, frame, { 10, 22 }, cv::FONT_HERSHEY_COMPLEX, 0.65);
