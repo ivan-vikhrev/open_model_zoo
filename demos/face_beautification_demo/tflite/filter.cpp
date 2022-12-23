@@ -8,6 +8,7 @@
 // it is provided by YADRO.
 
 #include "filter.hpp"
+#include "models.hpp"
 
 #include <utils/ocv_common.hpp>
 #include <utils/performance_metrics.hpp>
@@ -51,16 +52,18 @@ inline cv::Mat mask3C(const cv::Mat &src, const cv::Mat &mask) {
     return res;
 }
 
-cv::Mat beautifyFaces(cv::Mat& img, const std::vector<std::vector<cv::Point>>& facesOvals,
-    const std::vector<std::vector<cv::Point>>& facesFeatures, PerformanceMetrics& m) {
+cv::Mat beautifyFace(cv::Mat img, const Face& face, PerformanceMetrics& m) {
+    std::vector<cv::Point> faceOval = face.landmarks.faceOval;
+    std::vector<std::vector<cv::Point>> faceFeatures = face.getFeatures();
+    auto rect = FaceMesh::enlargeFaceRoi(face.box) & cv::Rect({}, img.size());
 
-    cv::Mat mskSharp = fillPolyContours(img.size().width, img.size().height, facesFeatures);
-    cv::imshow("mask", mskSharp);
+    cv::Mat mskSharp = fillPolyContours(img.size().width, img.size().height, faceFeatures );
+    // cv::imshow("mask", mskSharp);
     // cv::waitKey(0);
     cv::Mat mskSharpG;
     cv::GaussianBlur(mskSharp, mskSharpG, {5, 5}, 0.0);
 
-    cv::Mat mskBlur = fillPolyContours(img.size().width, img.size().height, facesOvals);
+    cv::Mat mskBlur = fillPolyContours(img.size().width, img.size().height, {faceOval});
     cv::Mat mskBlurG;
     cv::GaussianBlur(mskBlur, mskBlurG, {5, 5}, 0.0);
 
@@ -74,26 +77,30 @@ cv::Mat beautifyFaces(cv::Mat& img, const std::vector<std::vector<cv::Point>>& f
     cv::Mat mskNoFaces;
     cv::bitwise_not(mskFacesWhite, mskNoFaces);
 
-    cv::Mat imgBilat;
+    cv::Mat imgBilat(img.clone());
+
     auto time = std::chrono::steady_clock::now();
-    cv::bilateralFilter(img, imgBilat, 9, 30.0, 30.0);
+    cv::bilateralFilter(img(rect), imgBilat(rect), 9, 30.0, 30.0);
     m.update(time);
+    // cv::imshow("filter", imgBilat);
+
     cv::Mat imgSharp = unsharpMask(img, 3, 0.7f);
     cv::Mat imgBilatMasked = mask3C(imgBilat, mskBlurFinal);
     cv::Mat imgSharpMasked = mask3C(imgSharp, mskSharpG);
     cv::Mat imgInMasked = mask3C(img, mskNoFaces);
     cv::Mat imgBeautif = imgBilatMasked + imgSharpMasked + imgInMasked;
+
     return imgBeautif;
 }
 
-cv::Mat applyFilter(cv::Mat& img, const std::vector<Face>& faces, PerformanceMetrics& m) {
-    std::vector<std::vector<cv::Point>> facesOvals;
-    std::vector<std::vector<cv::Point>> facesFeatures;
-    for (auto&& face : faces) {
-        const auto faceOval = face.landmarks.faceOval;
-        const std::vector<std::vector<cv::Point>> features = face.getFeatures();
-        facesOvals.push_back(face.landmarks.faceOval);
-        facesFeatures.insert(facesFeatures.end(), features.begin(), features.end());
-    }
-    return beautifyFaces(img, facesOvals, facesFeatures, m);
-}
+// cv::Mat applyFilter(cv::Mat img, const Face& faces, PerformanceMetrics& m) {
+//     std::vector<std::vector<cv::Point>> facesOvals;
+//     std::vector<std::vector<cv::Point>> facesFeatures;
+//     for (auto&& face : faces) {
+//         const auto faceOval = face.landmarks.faceOval;
+//         const std::vector<std::vector<cv::Point>> features = face.getFeatures();
+//         facesOvals.push_back(face.landmarks.faceOval);
+//         facesFeatures.insert(facesFeatures.end(), features.begin(), features.end());
+//     }
+//     return beautifyFaces(img, facesOvals, facesFeatures, m);
+// }

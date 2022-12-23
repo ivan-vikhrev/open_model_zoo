@@ -17,5 +17,5 @@
 
 #include <vector>
 
-cv::Mat applyFilter(cv::Mat& img, const std::vector<Face>& faces, PerformanceMetrics& m);
+cv::Mat beautifyFace(cv::Mat img, const Face& face, PerformanceMetrics& m);
 

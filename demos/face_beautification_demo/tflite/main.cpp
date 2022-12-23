@@ -53,6 +53,9 @@ DEFINE_string(mlm, "", mlm_msg);
 constexpr char o_msg[] = "name of the output file(s) to save";
 DEFINE_string(o, "", o_msg);
 
+constexpr char render_msg[] = "enable landmarks rendering";
+DEFINE_bool(render, false, render_msg);
+
 constexpr char r_msg[] = "output inference results as raw values";
 DEFINE_bool(r, false, r_msg);
 
@@ -81,8 +84,9 @@ void parse(int argc, char *argv[]) {
                   << "\n\t[--loop]                                      " << loop_msg
                   << "\n\t[--mlm <MODEL FILE>]                          " << mlm_msg
                   << "\n\t[ -o <OUTPUT>]                                " << o_msg
+                  << "\n\t[ --render]                                   " << render_msg
                   << "\n\t[ -r]                                         " << r_msg
-                  << "\n\t[--nthreads <integer>]                            " << num_threads_message
+                  << "\n\t[--nthreads <integer>]                        " << num_threads_message
                   << "\n\t[--show] ([--noshow])                         " << show_msg
                   << "\n\t[ -t <NUMBER>]                                " << t_msg
                   << "\n\t[ -u <DEVICE>]                                " << u_msg
@@ -118,7 +122,7 @@ void  renderResults(cv::Mat img, const std::vector<Face>& faces) {
 int main(int argc, char *argv[]) {
     std::set_terminate(catcher);
     parse(argc, argv);
-    PerformanceMetrics metrics, fdMetrics, lmMetrics, filterMetrics, renderMetrics, bilatFilter;
+    PerformanceMetrics metrics, fdMetrics, lmMetrics, filterMetrics, bilatMetrics, renderMetrics;
 
     BlazeFace faceDetector(FLAGS_m, FLAGS_t);
     faceDetector.setNumThreads(FLAGS_nthreads);
@@ -135,6 +139,8 @@ int main(int argc, char *argv[]) {
 
     LazyVideoWriter videoWriter{FLAGS_o, cap->fps(), FLAGS_lim};
 
+    bool showOriginal = false;
+    bool renderLandmarks = FLAGS_render;
     bool keepRunning = true;
     while (keepRunning) {
         auto startTime = std::chrono::steady_clock::now();
@@ -159,15 +165,19 @@ int main(int argc, char *argv[]) {
             lmMetrics.update(lmStart);
             auto& lm = landmarksRes.landmarks;
             faces.emplace_back(faceRect, box.confidence, lm);
+            auto filterStart = std::chrono::steady_clock::now();
+            auto res = beautifyFace(frame, faces.back(), bilatMetrics);
+            if (!showOriginal) {
+                frame = res;
+            }
+            filterMetrics.update(filterStart);
         }
 
-        auto filterStart = std::chrono::steady_clock::now();
-        cv::Mat beautifiedImg = applyFilter(frame, faces, bilatFilter);
-        filterMetrics.update(filterStart);
 
         auto renderingStart = std::chrono::steady_clock::now();
-        // visualizer.draw(frame, faces);
-        renderResults(frame, faces);
+        if (renderLandmarks) {
+            renderResults(frame, faces);
+        }
         presenter.drawGraphs(frame);
         renderMetrics.update(renderingStart);
 
@@ -176,8 +186,14 @@ int main(int argc, char *argv[]) {
         videoWriter.write(frame);
         if (FLAGS_show) {
             cv::imshow(argv[0], frame);
-            cv::imshow("Beautified", beautifiedImg);
+            // cv::imshow("Beautified", beautifiedImg);
             int key = cv::waitKey(1);
+            if ('L' == key || 'l' == key) {
+                renderLandmarks = !renderLandmarks;
+            }
+            if ('O' == key || 'o' == key) {
+                showOriginal = !showOriginal;
+            }
             if ('P' == key || 'p' == key || '0' == key || ' ' == key) {
                 key = cv::waitKey(0);
             }
@@ -193,7 +209,8 @@ int main(int argc, char *argv[]) {
     slog::info << "\tDecoding:\t" << std::fixed << std::setprecision(1) << cap->getMetrics().getTotal().latency << " ms" << slog::endl;
     slog::info << "\tFace detection:\t" << fdMetrics.getTotal().latency << " ms" << slog::endl;
     slog::info << "\tLandmarks detection:\t" << lmMetrics.getTotal().latency << " ms" << slog::endl;
-    slog::info << "\tBilaterial filter:\t" << filterMetrics.getTotal().latency << " ms" << slog::endl;
+    slog::info << "\tFilters:\t" << filterMetrics.getTotal().latency << " ms" << slog::endl;
+    slog::info << "\tBilaterial filter:\t" << bilatMetrics.getTotal().latency << " ms" << slog::endl;
     slog::info << "\tRendering:\t" << renderMetrics.getTotal().latency << " ms" << slog::endl;
     slog::info << presenter.reportMeans() << slog::endl;
 
