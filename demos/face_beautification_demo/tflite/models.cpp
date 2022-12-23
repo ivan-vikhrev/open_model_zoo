@@ -57,7 +57,7 @@ std::string getShapeString(const TfLiteIntArray& arr) {
 }
 }  // namespace
 
-TFLiteModel::TFLiteModel(const std::string &modelFile) {
+TFLiteModel::TFLiteModel(const std::string &modelFile, int nthreads) : nthreads(nthreads) {
     readModel(modelFile);
 }
 
@@ -68,10 +68,27 @@ void TFLiteModel::readModel(const std::string &modelFile) {
         throw std::runtime_error("Failed to read model " + modelFile);
     }
 
-    tflite::InterpreterBuilder(*model, resolver)(&interpreter);
+    tflite::InterpreterBuilder builder(*model, resolver);
+    builder(&interpreter, nthreads);
+    slog::info << "\tThreads number: " <<  nthreads << slog::endl;
     if (!interpreter) {
         throw std::runtime_error("Interpreter failed to build");
     }
+}
+
+void TFLiteModel::allocateTensors() {
+    interpreter->AllocateTensors();
+}
+
+void TFLiteModel::infer() {
+    interpreter->Invoke();
+}
+
+std::unique_ptr<Result> TFLiteModel::run(const cv::Mat &img, const std::shared_ptr<MetaData>& metaData) {
+    this->metaData = metaData;
+    preprocess(img);
+    infer();
+    return postprocess();
 }
 
 void BlazeFace::generateAnchors() {
@@ -100,27 +117,8 @@ void BlazeFace::generateAnchors() {
     }
 }
 
-void TFLiteModel::setNumThreads(int nthreads) {
-    interpreter->SetNumThreads(nthreads);
-}
-
-void TFLiteModel::allocateTensors() {
-    interpreter->AllocateTensors();
-}
-
-void TFLiteModel::infer() {
-    interpreter->Invoke();
-}
-
-std::unique_ptr<Result> TFLiteModel::run(const cv::Mat &img, const std::shared_ptr<MetaData>& metaData) {
-    this->metaData = metaData;
-    preprocess(img);
-    infer();
-    return postprocess();
-}
-
-BlazeFace::BlazeFace(const std::string &modelFile, float threshold)
-    : TFLiteModel(modelFile),
+BlazeFace::BlazeFace(const std::string &modelFile, float threshold, int nthreads)
+    : TFLiteModel(modelFile, nthreads),
       confidenceThreshold(threshold) {
     checkInputsOutputs();
     allocateTensors();
@@ -307,8 +305,8 @@ std::unique_ptr<Result> BlazeFace::postprocess() {
     return std::unique_ptr<Result>(result);
 }
 
-FaceMesh::FaceMesh(const std::string &modelFile)
-    : TFLiteModel(modelFile) {
+FaceMesh::FaceMesh(const std::string &modelFile, int nthreads)
+    : TFLiteModel(modelFile, nthreads) {
     checkInputsOutputs();
     allocateTensors();
 }

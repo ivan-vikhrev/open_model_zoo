@@ -98,16 +98,15 @@ protected:
     virtual std::unique_ptr<Result> postprocess() = 0;
 
 public:
-    TFLiteModel(const std::string &modelFile);
+    TFLiteModel(const std::string &modelFile, int nthreads);
     virtual ~TFLiteModel() = default;
-    void setNumThreads(int nthreads);
     std::unique_ptr<Result> run(const cv::Mat &img, const std::shared_ptr<MetaData>& metaData = nullptr);
 };
 
 class BlazeFace : public TFLiteModel {
 public:
     BlazeFace(const std::string &modelFile,
-        float threshold);
+        float threshold, int nthreads);
 
 protected:
     void checkInputsOutputs() override;
@@ -141,7 +140,7 @@ private:
 
 class FaceMesh : public TFLiteModel {
 public:
-    FaceMesh(const std::string &modelFile);
+    FaceMesh(const std::string &modelFile, int nthreads);
     static cv::Rect enlargeFaceRoi(cv::Rect roi);
 
 protected:

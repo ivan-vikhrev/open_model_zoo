@@ -18,6 +18,7 @@
 #include <monitors/presenter.h>
 
 #include <tensorflow/lite/version.h>
+#include <tensorflow/lite/delegates/xnnpack/xnnpack_delegate.h>
 
 #include <iostream>
 #include <limits>
@@ -124,13 +125,9 @@ int main(int argc, char *argv[]) {
     parse(argc, argv);
     PerformanceMetrics metrics, fdMetrics, lmMetrics, filterMetrics, bilatMetrics, renderMetrics;
 
-    BlazeFace faceDetector(FLAGS_m, FLAGS_t);
-    faceDetector.setNumThreads(FLAGS_nthreads);
-    slog::info << "\tThreads number:" <<  FLAGS_nthreads << slog::endl;
+    BlazeFace faceDetector(FLAGS_m, FLAGS_t, FLAGS_nthreads);
 
-    FaceMesh facialLandmarksDetector(FLAGS_mlm);
-    facialLandmarksDetector.setNumThreads(FLAGS_nthreads);
-    slog::info << "\tThreads number: " <<  FLAGS_nthreads << slog::endl;
+    FaceMesh facialLandmarksDetector(FLAGS_mlm, FLAGS_nthreads);
 
     size_t framesCounter = 0;
     std::unique_ptr<ImagesCapture> cap = openImagesCapture(FLAGS_i, FLAGS_loop);
