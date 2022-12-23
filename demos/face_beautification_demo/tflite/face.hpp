@@ -1,45 +1,67 @@
-// Copyright (C) 2018-2019 Intel Corporation
-// SPDX-License-Identifier: Apache-2.0
-//
+// Copyright (c), 2022, KNS Group LLC (YADRO).
+// All Rights Reserved.
+
+// This software contains the intellectual property of YADRO
+// or is licensed to YADRO from third parties.  Use of this
+// software and the intellectual property contained therein is expressly
+// limited to the terms and conditions of the License Agreement under which
+// it is provided by YADRO.
 
 # pragma once
-#include <string>
-#include <map>
-#include <memory>
-#include <utility>
-#include <list>
-#include <vector>
+
 #include <opencv2/opencv.hpp>
 
-#include "detectors.hpp"
+#include <vector>
 
-// -------------------------Describe detected face on a frame-------------------------------------------------
-using Contour   = std::vector<cv::Point>;
+struct BBox {
+    float left;
+    float top;
+    float right;
+    float bottom;
 
-// struct Face {
-// public:
-//     using Ptr = std::shared_ptr<Face>;
+    cv::Point2f leftEye;
+    cv::Point2f rightEye;
+    cv::Point nose;
+    cv::Point mouth;
+    cv::Point leftTragion;
+    cv::Point rightTragion;
 
-//     explicit Face(size_t id, cv::Rect& location);
+    float confidence;
+};
 
-//     void updateLandmarks(std::vector<float> values);
-//     const std::vector<Contour> getFaceContour();
-//     const std::vector<Contour> getFaceElemsContours();
-//     const std::vector<float>& getLandmarks();
-//     size_t getId();
+struct FacialLandmarks {
+    std::vector<cv::Point> faceOval;
+    std::vector<cv::Point> leftBrow;
+    std::vector<cv::Point> leftEye;
+    std::vector<cv::Point> rightBrow;
+    std::vector<cv::Point> rightEye;
+    std::vector<cv::Point> nose;
+    std::vector<cv::Point> lips;
 
-// public:
-//     cv::Rect _location;
-//     float _intensity_mean;
+    std::vector<std::vector<cv::Point>> getAll() const {
+        return {faceOval, leftBrow, leftEye,
+            rightBrow, rightEye, nose, lips};
+    }
+};
 
-// private:
-//     size_t _id;
-//     std::vector<float> _landmarks;
-//     Contour cntFace, cntLeftEye, cntRightEye, cntNose, cntMouth;
+struct Face {
+    cv::Rect box;
+    float confidence;
+    FacialLandmarks landmarks;
 
-// };
+    Face(cv::Rect box, float conf, FacialLandmarks lm)
+        : box(box), confidence(conf), landmarks(lm) {}
 
-// ----------------------------------- Utils -----------------------------------------------------------------
-// float calcIoU(cv::Rect& src, cv::Rect& dst);
-// float calcMean(const cv::Mat& src);
-// Face::Ptr matchFace(cv::Rect rect, std::list<Face::Ptr>& faces);
+    std::vector<std::vector<cv::Point>> getFeatures() const {
+        return {landmarks.leftBrow, landmarks.leftEye, landmarks.rightBrow,
+            landmarks.rightEye, landmarks.nose, landmarks.lips};
+    }
+
+    float width() const {
+        return box.width;
+    }
+
+    float height() const {
+        return box.height;
+    }
+};

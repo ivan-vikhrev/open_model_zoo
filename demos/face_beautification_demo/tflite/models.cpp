@@ -1,10 +1,14 @@
-// Copyright (C) 2018-2022 Intel Corporation
-// SPDX-License-Identifier: Apache-2.0
-//
+// Copyright (c), 2022, KNS Group LLC (YADRO).
+// All Rights Reserved.
 
-#include "detectors.hpp"
+// This software contains the intellectual property of YADRO
+// or is licensed to YADRO from third parties.  Use of this
+// software and the intellectual property contained therein is expressly
+// limited to the terms and conditions of the License Agreement under which
+// it is provided by YADRO.
 
-#include <utils/config_factory.h>
+#include "models.hpp"
+
 #include <utils/image_utils.h>
 #include <utils/ocv_common.hpp>
 #include <utils/nms.hpp>
@@ -22,9 +26,6 @@
 #include <map>
 
 namespace {
-constexpr size_t ndetections = 200;
-constexpr size_t batchSize = 1;
-
 std::map<TfLiteType, std::string> tfLiteTypeToStr {
   {kTfLiteNoType, "kTfLiteNoType"},
   {kTfLiteFloat32, "kTfLiteFloat32"},
@@ -205,7 +206,6 @@ void BlazeFace::decodeBoxes(float* boxes) {
         }
 
         // convert x_center, y_center, w, h to xmin, ymin, xmax, ymax
-
         float half_width = boxes[start_pos + 2] / 2;
         float half_height = boxes[start_pos + 3] / 2;
         float center_x = boxes[start_pos];
@@ -375,17 +375,18 @@ void FaceMesh::preprocess(const cv::Mat &img) {
     FaceMeshData mdata = metaData->asRef<FaceMeshData>();
 
     cv::Rect faceRect = mdata.faceRect;
-    faceRect = FaceMesh::enlargeFaceRoi(faceRect) & cv::Rect({}, img.size());
+    faceRect = enlargeFaceRoi(faceRect) & cv::Rect({}, img.size());
     faceRoiWidth = faceRect.width;
     faceRoiHeight = faceRect.height;
     rotationCenter = (faceRect.tl() + faceRect.br()) * 0.5;
 
     std::vector<cv::Point2f> dstPoints = {
         {0, 0},
-        {192, 0},
-        {192, 192},
-        {0, 192}
+        {(float)inputWidth, 0},
+        {(float)inputWidth, (float)inputHeight},
+        {0, (float)inputHeight}
     };
+
     std::vector<cv::Point2f> srcPoints = {
         faceRect.tl(),
         faceRect.tl() + cv::Point{faceRect.width, 0},
@@ -397,7 +398,7 @@ void FaceMesh::preprocess(const cv::Mat &img) {
     srcPoints = rotatePoints(srcPoints, rotationRad, rotationCenter);
     auto lambda = cv::getPerspectiveTransform(srcPoints, dstPoints);
     cv::Mat resizedImage;
-    warpPerspective(img, resizedImage, lambda, {inputWidth, inputHeight});
+    cv::warpPerspective(img, resizedImage, lambda, {inputWidth, inputHeight});
     // cv::imshow("transformed", resizedImage);
     // cv::waitKey(0);
     resizedImage.convertTo(resizedImage, CV_32F);
@@ -418,6 +419,7 @@ void FaceMesh::preprocess(const cv::Mat &img) {
 std::unique_ptr<Result> FaceMesh::postprocess() {
     float* landmarksPtr = interpreter->typed_output_tensor<float>(0);
     LandmarksResult* result = new LandmarksResult();
+
     auto fillLandmarks = [this, landmarksPtr](std::vector<cv::Point>& lms, const std::vector<int>& ids) {
         for (int i : ids) {
             // normalize
@@ -425,35 +427,23 @@ std::unique_ptr<Result> FaceMesh::postprocess() {
             float y = (landmarksPtr[i * 3 + 1]) / inputHeight;
             // rotate
             cv::Point2f p = rotatePoints({{x, y}}, rotationRad, {0.5, 0.5}).front();
-            // rotX *= origImageHeight;
-            // rotY *= origImageHeight;
-            lms.emplace_back(clamp(p.x * faceRoiWidth + rotationCenter.x - faceRoiWidth / 2, 0.f, static_cast<float>(origImageWidth)),
-                clamp(p.y * faceRoiHeight + rotationCenter.y - faceRoiHeight / 2, 0.f, static_cast<float>(origImageHeight)));
+            // map back to img coordinates
+            float offsetX = rotationCenter.x - faceRoiWidth / 2;
+            float offsetY = rotationCenter.y - faceRoiHeight / 2;
+            p = {p.x * faceRoiWidth + offsetX,
+                p.y * faceRoiHeight + offsetY};
+            lms.emplace_back(clamp(p.x, 0.f, static_cast<float>(origImageWidth)),
+                clamp(p.y, 0.f, static_cast<float>(origImageHeight)));
         }
     };
-
-    // std::sort(faceOvalIdx.begin(), faceOvalIdx.end());
-    // std::sort(leftEyeIdx.begin(), leftEyeIdx.end());
-    // std::sort(rightEyeIdx.begin(), rightEyeIdx.end());
-    // std::sort(leftBrowIdx.begin(), leftBrowIdx.end());
-    // std::sort(rightBrowIdx.begin(), rightBrowIdx.end());
-    // std::sort(lipsIdx.begin(), lipsIdx.end());
-
-    // std::sort(all.begin(), all.end());
-    // std::set<int> s;
-    // for (int i = 0; i < 468; ++i) {
-    //     s.insert(i);
-    // }
-    // std::vector<int> res;
-    // std::set_difference(s.begin(), s.end(), all.begin(), all.end(), std::back_inserter(res));
 
     fillLandmarks(result->landmarks.faceOval, faceOvalIdx);
     fillLandmarks(result->landmarks.leftEye, leftEyeIdx);
     fillLandmarks(result->landmarks.rightEye, rightEyeIdx);
     fillLandmarks(result->landmarks.leftBrow, leftBrowIdx);
     fillLandmarks(result->landmarks.rightBrow, rightBrowIdx);
+    fillLandmarks(result->landmarks.nose, noseIdx);
     fillLandmarks(result->landmarks.lips, lipsIdx);
-    // fillLandmarks(result->landmarks.left, res);
 
     return std::unique_ptr<Result>(result);
 }
