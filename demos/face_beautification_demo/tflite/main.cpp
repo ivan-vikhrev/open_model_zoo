@@ -113,7 +113,7 @@ void  renderResults(cv::Mat img, const std::vector<Face>& faces) {
             for (const auto& p : lm) {
                 cv::circle(img, p, 2, cv::Scalar(110, 193, 225), -1);
             }
-            cv::polylines(img, lm, true,{192, 192, 192});
+            cv::polylines(img, lm, true, {192, 192, 192});
         }
     }
 }
@@ -203,11 +203,12 @@ int main(int argc, char *argv[]) {
 
     slog::info << "Metrics report:" << slog::endl;
     metrics.logTotal();
+    slog::info << "Stages: " << slog::endl;
     slog::info << "\tDecoding:\t" << std::fixed << std::setprecision(1) << cap->getMetrics().getTotal().latency << " ms" << slog::endl;
     slog::info << "\tFace detection:\t" << fdMetrics.getTotal().latency << " ms" << slog::endl;
     slog::info << "\tLandmarks detection:\t" << lmMetrics.getTotal().latency << " ms" << slog::endl;
     slog::info << "\tFilters:\t" << filterMetrics.getTotal().latency << " ms" << slog::endl;
-    slog::info << "\tBilaterial filter:\t" << bilatMetrics.getTotal().latency << " ms" << slog::endl;
+    slog::info << "\t\tBilaterial filter:\t" << bilatMetrics.getTotal().latency << " ms" << slog::endl;
     slog::info << "\tRendering:\t" << renderMetrics.getTotal().latency << " ms" << slog::endl;
     slog::info << presenter.reportMeans() << slog::endl;
 
